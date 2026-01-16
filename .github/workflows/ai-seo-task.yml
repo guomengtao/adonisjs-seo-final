@@ -26,12 +26,14 @@ jobs:
       - name: Run AI SEO Pipeline
         run: node ace ai:seo
         env:
-          # --- 基础运行环境 ---
+          # --- 基础运行环境 (修复 Missing PORT/HOST/LOG_LEVEL) ---
           NODE_ENV: production
+          PORT: 3333
+          HOST: 0.0.0.0
+          LOG_LEVEL: info
           APP_KEY: ${{ secrets.APP_KEY }} 
           
           # --- 关键：骗过启动校验的占位符 ---
-          # 只要 env.ts 里有定义但没设可选，就必须给值
           HF_TOKEN: "dummy_placeholder"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
@@ -44,6 +46,6 @@ jobs:
           PG_DB_NAME: ${{ secrets.PG_DB_NAME }}
           PG_SSL: true
 
-          # --- Cloudflare AI (如果你还在用) ---
+          # --- Cloudflare AI ---
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
