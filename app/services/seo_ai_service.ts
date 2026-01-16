@@ -74,42 +74,148 @@ export default class SeoAiService {
           
           // 使用 Set 防止文件名在同一批次中由于 AI 出错而重复
           const localUsedFiles = new Set<string>()
+          
+          // 预先将原始文件名转换为小写用于匹配
+          const originalFilenamesLower = originalFilenames.map(fn => fn.toLowerCase())
+
+          // 状态机解析多行格式的图片数据
+          interface ImageData {
+            original_filename?: string;
+            new_filename?: string;
+            alt_zh?: string;
+            caption_zh?: string;
+          }
+
+          let currentImage: ImageData = {}
+          let isProcessingImage = false
 
           for (const line of lines) {
-            if (line.includes('|')) {
+            // 过滤掉说明行
+            if (line.toLowerCase().startsWith('note:') || line.startsWith('*') || 
+                line.includes('the results are in the exact format specified') || 
+                line.includes('after analyzing') || 
+                line.includes('here are the results')) {
+              continue
+            }
+            
+            // 处理图片编号行（如 "1. " 或 "2. "）
+            const imageNumberMatch = line.match(/^(\d+)\./)
+            if (imageNumberMatch) {
+              // 如果当前有正在处理的图片，先保存它
+              if (isProcessingImage && 
+                  currentImage.original_filename && 
+                  currentImage.new_filename && 
+                  currentImage.alt_zh && 
+                  currentImage.caption_zh) {
+                images.push(currentImage as any)
+              }
+              // 开始新的图片处理
+              currentImage = {}
+              isProcessingImage = true
+              // 检查行中是否直接包含原始文件名（有些格式可能在编号后直接开始字段）
+              const remainingLine = line.replace(/^\d+\.\s*/, '')
+              if (remainingLine.includes('original_filename:')) {
+                const value = remainingLine.replace('original_filename:', '').trim()
+                currentImage.original_filename = value.toLowerCase().replace(/["']/g, '')
+              }
+              continue
+            }
+            
+            // 处理字段行
+            if (isProcessingImage) {
+              // 提取字段名和值
+              const fieldMatch = line.match(/^([a-z_]+):\s*(.+)$/i)
+              if (fieldMatch) {
+                const [, fieldName, fieldValue] = fieldMatch
+                const normalizedField = fieldName.toLowerCase()
+                
+                switch (normalizedField) {
+                  case 'original_filename':
+                    currentImage.original_filename = fieldValue.toLowerCase().replace(/["']/g, '')
+                    break
+                  case 'new_filename':
+                    currentImage.new_filename = fieldValue.toLowerCase().replace(/["']/g, '')
+                    break
+                  case 'alt_zh':
+                  case 'alt_text':
+                    currentImage.alt_zh = fieldValue.trim()
+                    break
+                  case 'caption_zh':
+                  case 'caption_text':
+                    currentImage.caption_zh = fieldValue.trim()
+                    break
+                }
+              }
+            }
+            
+            // 同时支持 | 分隔格式
+            if (line.includes('|') && !isProcessingImage) {
               // 去掉可能的前缀（如 "1. "）
               const cleanLine = line.replace(/^\d+\.\s*/, '')
               
-              let [original_filename, new_filename, alt_zh, caption_zh] = cleanLine.split('|').map((item: string) => item.trim())
+              const parts = cleanLine.split('|').map((item: string) => item.trim())
               
-              if (original_filename && new_filename && alt_zh && caption_zh) {
-                // 基础清洗：确保文件名后缀正确且无引号
+              if (parts.length >= 4) {
+                let [original_filename, new_filename, alt_zh, caption_zh] = parts
+                
                 original_filename = original_filename.toLowerCase().replace(/["']/g, '')
                 new_filename = new_filename.toLowerCase().replace(/["']/g, '')
-                if (!new_filename.endsWith('.webp')) {
-                    new_filename = new_filename.split('.')[0] + '.webp'
-                }
-
-                // 确保文件名格式正确
-                new_filename = new_filename
-                  .replace(/[^a-z0-9\-_\.]/g, '-')
-                  .replace(/-+/g, '-')
-                  .replace(/^-|-$/g, '')
-
-                // 简单的防重逻辑
-                if (localUsedFiles.has(new_filename)) {
-                    new_filename = new_filename.replace('.webp', `-${Math.random().toString(36).substring(2, 5)}.webp`)
-                }
                 
-                localUsedFiles.add(new_filename)
-                images.push({ original_filename, new_filename, alt_zh, caption_zh })
+                if (original_filename && new_filename && alt_zh && caption_zh) {
+                  images.push({ original_filename, new_filename, alt_zh, caption_zh })
+                }
               }
             }
           }
+          
+          // 保存最后一张图片
+          if (isProcessingImage && 
+              currentImage.original_filename && 
+              currentImage.new_filename && 
+              currentImage.alt_zh && 
+              currentImage.caption_zh) {
+            images.push(currentImage as any)
+          }
+          
+          // 过滤掉与原始文件名不匹配的图片
+          const filteredImages = images.filter(img => 
+            img.original_filename && originalFilenamesLower.includes(img.original_filename.toLowerCase())
+          )
+          
+          // 对过滤后的图片进行最终处理
+          const processedImages = filteredImages.map(img => {
+            // 确保文件名后缀正确
+            let new_filename = img.new_filename || ''
+            if (!new_filename.endsWith('.webp')) {
+              new_filename = new_filename.split('.')[0] + '.webp'
+            }
+
+            // 确保文件名格式正确
+            new_filename = new_filename
+              .replace(/[^a-z0-9\-_\.]/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '')
+
+            // 简单的防重逻辑
+            if (localUsedFiles.has(new_filename)) {
+              new_filename = new_filename.replace('.webp', `-${Math.random().toString(36).substring(2, 5)}.webp`)
+            }
+              
+            localUsedFiles.add(new_filename)
             
-          if (images.length > 0) {
-            console.log(`✅ 成功解析 ${images.length} 张图片的差异化SEO数据`)
-            return { images }
+            return {
+              original_filename: img.original_filename || '',
+              new_filename,
+              alt_zh: img.alt_zh || '',
+              caption_zh: img.caption_zh || ''
+            }
+          }).filter(img => 
+            img.original_filename && img.new_filename && img.alt_zh && img.caption_zh
+          )
+            
+          if (processedImages.length > 0) {
+            console.log(`✅ 成功解析 ${processedImages.length} 张图片的差异化SEO数据`)
+            return { images: processedImages }
           }
         } catch (pipeError) {
           console.error(`🟡 解析逻辑异常:`, pipeError.message)
