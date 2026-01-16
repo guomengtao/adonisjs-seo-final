@@ -115,29 +115,10 @@ export default class SeoAiService {
           console.error(`🟡 解析逻辑异常:`, pipeError.message)
         }
         
-        // 如果 AI 返回的数据不完整，使用默认方法生成
-        const processedImages: any[] = []
-        for (const origFilename of originalFilenames) {
-          const newFile = origFilename.toLowerCase()
-            .replace(/\.jpg$|\.jpeg$|\.png$|\.gif$/i, '.webp')
-            .replace(/[^a-z0-9\-_\.]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-          
-          const alt_zh = `${caseId.replace(/-/g, ' ')} 相关图片`
-          const caption_zh = `${caseId.replace(/-/g, ' ')} 的相关图片`
-          
-          processedImages.push({
-            original_filename: origFilename,
-            new_filename: newFile,
-            alt_zh: alt_zh,
-            caption_zh: caption_zh
-          })
-        }
-          
-        if (processedImages.length > 0) {
-          return { images: processedImages }
-        }
+        // AI返回的数据不完整，直接失败
+        console.error(`❌ AI识别失败 [${caseId}]: 返回的数据不完整，无法提取足够的SEO信息`)
+        console.error(`   期望处理 ${originalFilenames.length} 张图片，但实际解析到 0 张有效图片数据`)
+        return null
       }
       return null
     } catch (e: any) {

@@ -160,7 +160,21 @@ export default class AiSeoRun extends BaseCommand {
             this.logger.info(`   目标记录: case_id=${case_id}, new_filename=${img.new_filename}`)
             this.logger.info(`   写入内容: alt_zh=${img.alt_zh}, caption_zh=${img.caption_zh}, ai_processed=200`)
             
-            // 根据 original_filename 查找并更新数据
+            // 根据 original_filename 查找记录，获取id和原alt_zh值
+            const existingRecord = await trx.from('missing_persons_assets')
+              .where('case_id', case_id)
+              .where('original_filename', img.original_filename)
+              .select('id', 'alt_zh')
+              .first()
+            
+            // 显示修改前后的对比
+            if (existingRecord) {
+              this.logger.info('📊 更新前后对比:')
+              this.logger.info(`   记录ID: ${existingRecord.id}`)
+              this.logger.info(`   Alt文本: ${existingRecord.alt_zh || '空'} -> ${img.alt_zh}`)
+            }
+            
+            // 更新数据
             const updateResult = await trx.from('missing_persons_assets')
               .where('case_id', case_id)
               .where('original_filename', img.original_filename)
@@ -175,14 +189,15 @@ export default class AiSeoRun extends BaseCommand {
             const affectedRows = typeof updateResult === 'number' ? updateResult : updateResult[0]
             if (affectedRows > 0) {
               processedImages++
-              processedDetails.push(`   - ${img.new_filename}: 更新成功`)
+              processedDetails.push(`   - ${img.new_filename}: 更新成功 (ID: ${existingRecord?.id || '未知'})`)
             } else {
               this.logger.info(`   ⚠️  [${img.new_filename}]：未找到匹配的记录，将创建新记录`)
               try {
                 // 创建新的资产记录
                 const key = `cases/${case_id}/${img.new_filename}`
                 
-                await trx.table('missing_persons_assets').insert({
+                // 插入新记录并获取自动生成的id
+                const insertResult = await trx.table('missing_persons_assets').insert({
                   case_id: case_id,
                   is_primary: 0,
                   sort_order: 99,
@@ -198,8 +213,9 @@ export default class AiSeoRun extends BaseCommand {
                   ai_processed: 200
                 })
                 
+                const insertedId = insertResult[0] || '未知' // 获取插入的id
                 processedImages++
-                processedDetails.push(`   - ${img.new_filename}: 插入成功`)
+                processedDetails.push(`   - ${img.new_filename}: 插入成功 (ID: ${insertedId})`)
               } catch (insertError) {
                 this.logger.error(`   ❌ 插入记录失败 [${img.new_filename}]: ${insertError.message}`)
                 skippedImages++
@@ -222,10 +238,11 @@ export default class AiSeoRun extends BaseCommand {
         const savedAssets = await db.from('missing_persons_assets')
           .where('case_id', case_id)
           .where('ai_processed', 200)
-          .select('original_filename', 'new_filename', 'alt_zh', 'caption_zh')
+          .select('id', 'original_filename', 'new_filename', 'alt_zh', 'caption_zh')
         
         savedAssets.forEach((asset, index) => {
           this.logger.info(`   图片 ${index + 1}:`)
+          this.logger.info(`   ├─ 记录ID：${asset.id || '未知'}`)
           this.logger.info(`   ├─ 原始文件名：${asset.original_filename}`)
           this.logger.info(`   ├─ 新文件名：${asset.new_filename}`)
           this.logger.info(`   ├─ Alt文本：${asset.alt_zh}`)
