@@ -71,7 +71,6 @@ export default class AiSeoRun extends BaseCommand {
         this.logger.info(`   📝 正在为 ${originalFilenames.length} 张图片创建资产记录...`)
         
         for (let i = 0; i < imgMatches.length; i++) {
-          const url = imgMatches[i][1]
           const originalFilename = originalFilenames[i]
           const safeCaseId = case_id.replace(/\./g, '-')
           const fileName = `${safeCaseId}-${i + 1}.webp`

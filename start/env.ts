@@ -14,7 +14,7 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // 关键：添加 Cloudflare 配置校验
   CF_ACCOUNT_ID: Env.schema.string(),
-  CF_API_TOKEN: Env.schema.string(),
+  CF_AI_TOKEN: Env.schema.string(),
 
   // 数据库相关
   DB_CONNECTION: Env.schema.string.optional(),
