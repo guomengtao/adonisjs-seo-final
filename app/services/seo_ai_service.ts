@@ -5,6 +5,9 @@ export default class SeoAiService {
   private static apiToken = env.get('CF_AI_TOKEN')
   // 使用 Llama-3 8B，平衡速度与质量
   private static model = '@cf/meta/llama-3-8b-instruct'
+  // @cf/meta/llama-3.2-3b-instruct
+  // const aiEndpoint = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.2-3b-instruct`;
+
 
   public static async analyze(caseId: string, content: string, originalFilenames: string[]): Promise<{ images: Array<{original_filename: string, new_filename: string, alt_zh: string, caption_zh: string}> } | null | 'RETRY'> {
     try {

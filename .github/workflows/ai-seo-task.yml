@@ -3,7 +3,7 @@ name: AI SEO Automation
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/55 * * * *'
+    - cron: '*/20 * * * *'
 
 jobs:
   seo-analysis:
@@ -24,7 +24,7 @@ jobs:
         run: npm install
 
       - name: Run AI SEO Pipeline
-        run: node ace ai:seo
+        run: ./watch.sh ai:seo 15
         env:
           # --- 基础运行环境 (修复 Missing PORT/HOST/LOG_LEVEL) ---
           NODE_ENV: production
