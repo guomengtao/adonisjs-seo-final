@@ -3,7 +3,7 @@ name: AI SEO Automation
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *' # 既然配额多，建议改成每 15 分钟跑一次
+    - cron: '*/15 * * * *'
 
 jobs:
   seo-analysis:
@@ -26,22 +26,24 @@ jobs:
       - name: Run AI SEO Pipeline
         run: node ace ai:seo
         env:
+          # --- 基础运行环境 ---
           NODE_ENV: production
-          # --- 补充这些基础变量，跳过 Adonis 启动验证 ---
-          PORT: 3333
-          HOST: 0.0.0.0
-          LOG_LEVEL: info
           APP_KEY: ${{ secrets.APP_KEY }} 
           
-          # 1. 数据库连接 (Neon)
+          # --- 关键：骗过启动校验的占位符 ---
+          # 只要 env.ts 里有定义但没设可选，就必须给值
+          HF_TOKEN: "dummy_placeholder"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+          # --- 数据库连接 (Neon) ---
           DB_CONNECTION: pg
           PG_HOST: ${{ secrets.PG_HOST }}
-          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_PORT: ${{ secrets.PG_PORT || '5432' }}
           PG_USER: ${{ secrets.PG_USER }}
           PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
           PG_DB_NAME: ${{ secrets.PG_DB_NAME }}
           PG_SSL: true
 
-          # 2. AI 服务配置 (切换到 Google AI Studio)
-          # 注意：这里的名字要和 SeoAiService.ts 里的 env.get('GEMINI_API_KEY') 保持一致
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # --- Cloudflare AI (如果你还在用) ---
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
