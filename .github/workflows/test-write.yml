@@ -1,0 +1,47 @@
+name: Test-Variable-Update-Simple
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  update-variable:
+    runs-on: ubuntu-latest
+    
+    # 必须开启 write 权限，API 才能写入成功
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: 读取、加100、并改回去
+        env:
+          # 1. 从 vars 读取当前值 (例如 511)
+          CURRENT_VAL: ${{ vars.TASK_WEBP }}
+          # 2. 注入 Token 供 API 调用
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "--- 步骤 1: 读取 ---"
+          if [ -z "$CURRENT_VAL" ]; then
+            echo "❌ 变量 TASK_WEBP 为空或未定义"
+            exit 1
+          fi
+          echo "当前值是: $CURRENT_VAL"
+
+          echo "--- 步骤 2: 计算 ---"
+          # 计算增加 100 后的值
+          NEW_VAL=$((CURRENT_VAL + 100))
+          echo "计算后的新值是: $NEW_VAL"
+
+          echo "--- 步骤 3: 改回去 (使用 API) ---"
+          # 使用 curl 直接调用 GitHub API，绕过 gh 客户端权限限制
+          # 注意: 变量名 TASK_WEBP 必须已经在仓库中存在
+          response=$(curl -s -X PATCH \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/actions/variables/TASK_WEBP \
+            -d "{\"name\":\"TASK_WEBP\",\"value\":\"$NEW_VAL\"}")
+
+          # 检查 API 是否返回成功 (HTTP 204 是成功，或者返回 JSON)
+          echo "API 响应结果: $response"
+          echo "✅ 操作完成，请去 Settings 页面刷新查看是否变为 $NEW_VAL"

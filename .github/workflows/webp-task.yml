@@ -1,0 +1,50 @@
+name: Remote Image Pipeline
+
+on:
+  workflow_dispatch: # 手动触发
+  schedule:
+    - cron: '0 3 * * *' # 建议每天凌晨跑，GitHub 算力管够
+
+jobs:
+  process-images:
+    runs-on: ubuntu-latest
+    
+    # 设置超时时间，防止图片处理过多导致任务挂起
+    timeout-minutes: 60 
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run WebP Pipeline
+        # 这里执行你发给我的 webp:run
+        run: node ace webp:run
+        env:
+          NODE_ENV: production
+          # 1. 数据库连接 (Neon)
+          DB_CONNECTION: pg
+          PG_HOST: ${{ secrets.PG_HOST }}
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DB_NAME: ${{ secrets.PG_DB_NAME }}
+          PG_SSL: true
+
+          # 2. 图片存储 (Backblaze B2)
+          B2_ACCESS_KEY_ID: ${{ secrets.B2_ACCESS_KEY_ID }}
+          B2_SECRET_ACCESS_KEY: ${{ secrets.B2_SECRET_ACCESS_KEY }}
+          B2_BUCKET_NAME: ${{ secrets.B2_BUCKET_NAME }}
+          B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
+          B2_REGION: ${{ secrets.B2_REGION }}
+
+          # 3. 备份仓库 (Hugging Face)
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}

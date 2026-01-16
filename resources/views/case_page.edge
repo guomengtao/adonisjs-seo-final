@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ record.full_name }} - {{ record.city }}失踪人口案件详情</title>
+  <meta name="description" content="关于 {{ record.full_name }} 的详细失踪档案。失踪地点：{{ record.city }}, {{ record.state }}。查看最新线索和照片。">
+  
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #2d3748; max-width: 900px; margin: 0 auto; padding: 40px 20px; background: #f7fafc; }
+    .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    h1 { color: #1a202c; border-bottom: 3px solid #e2e8f0; padding-bottom: 10px; }
+    .breadcrumb { font-size: 0.9em; color: #718096; margin-bottom: 20px; }
+    .case-html { background: #fffaf0; padding: 20px; border-left: 4px solid #ed8936; margin: 20px 0; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+    .gallery figure { margin: 0; background: #edf2f7; padding: 15px; border-radius: 8px; }
+    .gallery img { width: 100%; height: auto; border-radius: 4px; display: block; }
+    figcaption { margin-top: 12px; font-size: 0.85em; color: #4a5568; line-height: 1.4; }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "{{ record.full_name }}",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "{{ record.city }}",
+      "addressRegion": "{{ record.state }}"
+    },
+    "description": "{{ record.full_name }} 的失踪案件档案"
+  }
+  </script>
+</head>
+<body>
+<nav class="breadcrumb">
+  <a href="/">首页</a> / 
+  @let(parts = relativePath.split('/'))
+  @each((part, index) in parts)
+    @let(backSteps = parts.length - index)
+    <a href="{{ '../'.repeat(backSteps) }}index.html">{{ part.replace(/-/g, ' ').toUpperCase() }}</a>
+    /
+  @end
+  <span>{{ record.full_name }}</span>
+</nav>
+
+  <div class="container">
+    <div class="breadcrumb">
+      首页 / {{ record.state }} / {{ record.city }}
+    </div>
+    
+    <h1>{{ record.full_name }}</h1>
+    
+    <div class="case-html">
+      {{{ record.case_html }}}
+    </div>
+
+    <h2>照片资料 (AI 分析)</h2>
+    <div class="gallery">
+      @each(img in images)
+        <figure>
+          {{-- 这里请修改为您 Hugging Face 的实际访问域名 --}}
+          <img src="https://huggingface.co/datasets/YourName/YourRepo/resolve/main/{{ img.new_filename }}" 
+               alt="{{ img.alt_zh }}" 
+               title="{{ img.alt_zh }}">
+          <figcaption>
+            <strong>图片描述：</strong>{{ img.caption_zh }}
+          </figcaption>
+        </figure>
+      @endeach
+    </div>
+  </div>
+</body>
+</html>

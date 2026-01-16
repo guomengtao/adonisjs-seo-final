@@ -1,0 +1,81 @@
+[ info ] 🚀 启动 SEO 自动化流水线...
+[ info ] --------------------------------------------------
+[ info ] 🤖 处理案件: acacia-nicole-duvall
+[ info ] 📋 案件表ID: 3765
+给AI发出的要求 [acacia-nicole-duvall]:
+系统提示: 您是一位专业的SEO专家，擅长图像优化。您的任务是分析提供的案件信息，并为图像生成优化的中文alt文本和说明文字。
+
+规则：
+- 绝对不允许返回JSON格式
+- 必须以竖线分隔格式返回结果
+- 每张图片占一行
+- 格式必须为：new_filename|alt_zh|caption_zh
+- 所有文本必须为中文
+- 提供有意义且描述性的alt文本以优化SEO
+- 编写简洁且引人入胜的说明文字
+- 不要包含任何解释或额外文本
+用户提示: 分析以下失踪人员案件信息，并为图像生成SEO数据：
+
+案件ID: acacia-nicole-duvall
+
+案件内容: Left: Acacia, circa 2007; Age-progression to age 15 (circa 2018); Tyree Pierre Duvall; Age-progression of Tyree to age 41 (circa 2017) Missing Since 03/28/2007 Missing From Whittier, California Classification Family Abduction Sex Female Race Biracial, Black, Hispanic Date of Birth 12/01/2003 (22) Age 3 years old Height and Weight 3'4, 26 pounds Distinguishing Characteristics Biracial (Black/Hispanic) female. Brown hair, brown eyes. Details of Disappearance Acacia and her brother Jon disappeared from Whittier, California on March 28, 2007. Authorities believe they were abducted by their non-custodial father, Tyree Pierre Duvall. A felony warrant was issued for him on May 19, 2009. A photo and age-progressed image of Tyree are posted with this case summary. His date of birth is March 31, 1976, making him 30 years old at the time of the children's abductions. He's described as Black, 5'6 and 210 pounds, with black hair and brown eyes. The Duvall children may be in Mexico. Few details are available in their cases. Investigating Agency Los Angeles County Sheriff's Office Norwalk Station 562-863-8711 Source Information The National Center for Missing and Exploited Children For the Lost Updated 7 times since October 12, 2004. Last updated December 7, 2019; age-progression updated.
+
+重要提示：绝对不要返回JSON格式
+返回结果必须使用以下精确格式：
+new_filename|alt_zh|caption_zh
+
+示例：
+case1-image1.jpg|产品展示图|这是一个展示产品外观的高质量图片
+case1-image2.jpg|使用场景|用户正在使用产品的实际场景
+
+不要使用JSON格式
+Raw AI response [acacia-nicole-duvall]: acacia-2007.jpg|2007年失踪时的Acacia|这是2007年失踪时Acacia的照片，她当时3岁。
+acacia-age-progressed.jpg|2018年年龄推进后的Acacia|这是Acacia在2018年的年龄推进照片，她当时15岁。
+tyree-2017.jpg|2017年年龄推进后的Tyree|这是Tyree在2017年的年龄推进照片，他当时41岁。
+tyree-2009.jpg|2009年非监管父亲Tyree的照片|这是2009年发布的Tyree的照片，他因涉嫌绑架其子女而被通缉。
+✅ 成功解析竖线分隔格式，共 4 张图片
+[ info ] 🤖 AI返回信息:
+[ info ] {
+  "images": [
+    {
+      "new_filename": "acacia-2007.jpg",
+      "alt_zh": "2007年失踪时的Acacia",
+      "caption_zh": "这是2007年失踪时Acacia的照片，她当时3岁。"
+    },
+    {
+      "new_filename": "acacia-age-progressed.jpg",
+      "alt_zh": "2018年年龄推进后的Acacia",
+      "caption_zh": "这是Acacia在2018年的年龄推进照片，她当时15岁。"
+    },
+    {
+      "new_filename": "tyree-2017.jpg",
+      "alt_zh": "2017年年龄推进后的Tyree",
+      "caption_zh": "这是Tyree在2017年的年龄推进照片，他当时41岁。"
+    },
+    {
+      "new_filename": "tyree-2009.jpg",
+      "alt_zh": "2009年非监管父亲Tyree的照片",
+      "caption_zh": "这是2009年发布的Tyree的照片，他因涉嫌绑架其子女而被通缉。"
+    }
+  ]
+}
+[ info ] 📝 准备写入数据库的内容:
+[ info ]    目标记录: case_id=acacia-nicole-duvall, new_filename=acacia-2007.jpg
+[ info ]    写入内容: alt_zh=2007年失踪时的Acacia, caption_zh=这是2007年失踪时Acacia的照片，她当时3岁。, ai_processed=200
+[ info ]    ⚠️  [acacia-2007.jpg]：未找到匹配的记录
+[ info ] 📝 准备写入数据库的内容:
+[ info ]    目标记录: case_id=acacia-nicole-duvall, new_filename=acacia-age-progressed.jpg
+[ info ]    写入内容: alt_zh=2018年年龄推进后的Acacia, caption_zh=这是Acacia在2018年的年龄推进照片，她当时15岁。, ai_processed=200
+[ info ]    ⚠️  [acacia-age-progressed.jpg]：未找到匹配的记录
+[ info ] 📝 准备写入数据库的内容:
+[ info ]    目标记录: case_id=acacia-nicole-duvall, new_filename=tyree-2017.jpg
+[ info ]    写入内容: alt_zh=2017年年龄推进后的Tyree, caption_zh=这是Tyree在2017年的年龄推进照片，他当时41岁。, ai_processed=200
+[ info ]    ⚠️  [tyree-2017.jpg]：未找到匹配的记录
+[ info ] 📝 准备写入数据库的内容:
+[ info ]    目标记录: case_id=acacia-nicole-duvall, new_filename=tyree-2009.jpg
+[ info ]    写入内容: alt_zh=2009年非监管父亲Tyree的照片, caption_zh=这是2009年发布的Tyree的照片，他因涉嫌绑架其子女而被通缉。, ai_processed=200
+[ info ]    ⚠️  [tyree-2009.jpg]：未找到匹配的记录
+[ success ] ✅ [acacia-nicole-duvall] 持久化完成
+[ info ]    ├─ 处理结果：
+[ info ]    ├─ 成功处理：0 张图片
+[ info ]    └─ 跳过：4 张图片

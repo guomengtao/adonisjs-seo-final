@@ -1,0 +1,9 @@
+<h1>{{ stateName }} 地区失踪案分布</h1>
+<ul>
+  @each(cityPath in cities)
+    @let(cityDisplay = cityPath.split('/').pop().replace(/-/g, ' ').toUpperCase())
+    <li>
+      <a href="/{{ cityPath }}/index.html">{{ cityDisplay }} 档案</a>
+    </li>
+  @end
+</ul>
