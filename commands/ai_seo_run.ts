@@ -177,8 +177,33 @@ export default class AiSeoRun extends BaseCommand {
               processedImages++
               processedDetails.push(`   - ${img.new_filename}: 更新成功`)
             } else {
-              this.logger.info(`   ⚠️  [${img.new_filename}]：未找到匹配的记录`)
-              skippedImages++
+              this.logger.info(`   ⚠️  [${img.new_filename}]：未找到匹配的记录，将创建新记录`)
+              try {
+                // 创建新的资产记录
+                const key = `cases/${case_id}/${img.new_filename}`
+                
+                await trx.table('missing_persons_assets').insert({
+                  case_id: case_id,
+                  is_primary: 0,
+                  sort_order: 99,
+                  asset_type: 'photo',
+                  original_filename: img.original_filename,
+                  new_filename: img.new_filename,
+                  storage_path: key,
+                  width: 0,
+                  height: 0,
+                  file_size: 0,
+                  alt_zh: img.alt_zh,
+                  caption_zh: img.caption_zh,
+                  ai_processed: 200
+                })
+                
+                processedImages++
+                processedDetails.push(`   - ${img.new_filename}: 插入成功`)
+              } catch (insertError) {
+                this.logger.error(`   ❌ 插入记录失败 [${img.new_filename}]: ${insertError.message}`)
+                skippedImages++
+              }
             }
           }
         })
