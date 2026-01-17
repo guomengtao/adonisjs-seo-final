@@ -14,15 +14,51 @@ export default class ImageProcessorService {
     const processedForHf: { path: string; buffer: Buffer }[] = []
     let caseImageCount = 0
 
+    // 严格清理字符串的函数
+    const strictClean = (str: string, isUrl: boolean = false): string => {
+      // 首先移除所有ASCII码小于32的不可见字符（这是主要问题）
+      str = str.replace(/[\x00-\x1F]/g, '')
+      
+      if (isUrl) {
+        // 移除URL末尾的特殊字符，如]:等
+        str = str.replace(/[\]\}\)\>\'\"\;\:\,\s]+$/g, '')
+        
+        // 移除URL中可能的非法字符，但保留URL必要的字符
+        str = str.replace(/[^a-zA-Z0-9\-._~:\/?#\[\]@!$&'()*+,;=]/g, '')
+        
+        // 确保URL以http://或https://开头
+        if (!str.startsWith('http://') && !str.startsWith('https://')) {
+          // 如果没有协议，尝试添加http://
+          str = 'http://' + str
+        }
+      } else {
+        // 对于非URL字符串，移除所有特殊字符，只保留安全字符
+        str = str.replace(/[^a-zA-Z0-9\-._\/\s]/g, '')
+      }
+      
+      return str
+    }
+
+    // 清理文件名的函数已合并到strictClean中
+
     // 2. 遍历处理图片
     for (let i = 0; i < urls.length; i++) {
       try {
-        const originalUrl = urls[i]
+        let originalUrl = urls[i]
+        
+        // 严格清理URL
+        originalUrl = strictClean(originalUrl, true)
+        
+        // 严格清理case_id和url_path
+        const cleanedCaseId = strictClean(record.case_id)
+        const cleanedUrlPath = strictClean(cleanUrlPath)
         
         // 统一文件名命名规范
-        const safeCaseId = record.case_id.replace(/\./g, '-')
+        const safeCaseId = cleanedCaseId.replace(/\./g, '-')
         const fileName = `${safeCaseId}-${i + 1}.webp`
-        const key = `${cleanUrlPath}/${record.case_id}/${fileName}`
+        
+        // 生成存储路径并严格清理
+        const key = strictClean(`${cleanedUrlPath}/${cleanedCaseId}/${fileName}`)
 
         // A. 下载与压缩
         const res = await axios.get(originalUrl, { 
@@ -44,12 +80,12 @@ export default class ImageProcessorService {
 
         // C. 写入资产明细表 (用于 SEO)
         await db.table('missing_persons_assets').insert({
-          case_id: record.case_id,
+          case_id: cleanedCaseId,
           is_primary: i === 0 ? 1 : 0,
           sort_order: i + 1,
           asset_type: 'photo',
-          original_filename: originalUrl.split('/').pop(),
-          new_filename: fileName,
+          original_filename: strictClean(originalUrl.split('/').pop() || ''),
+          new_filename: strictClean(fileName),
           storage_path: key,
           width: metadata.width || 0,
           height: metadata.height || 0,

@@ -1,0 +1,90 @@
+📋 Gemini API 模型可用性测试报告
+==================================================
+
+📊 测试统计:
+   总模型数: 50
+   成功: 13
+   失败: 20
+   跳过: 17
+
+✅ 可用模型列表:
+1. models/gemini-2.5-flash - 测试成功
+2. models/gemma-3-1b-it - 测试成功
+3. models/gemma-3-4b-it - 测试成功
+4. models/gemma-3-27b-it - 测试成功
+5. models/gemma-3n-e4b-it - 测试成功
+6. models/gemma-3n-e2b-it - 测试成功
+7. models/gemini-flash-latest - 测试成功
+8. models/gemini-flash-lite-latest - 测试成功
+9. models/gemini-2.5-flash-lite - 测试成功
+10. models/gemini-2.5-flash-preview-09-2025 - 测试成功
+11. models/gemini-2.5-flash-lite-preview-09-2025 - 测试成功
+12. models/gemini-3-flash-preview - 测试成功
+13. models/gemini-robotics-er-1.5-preview - 测试成功
+
+❌ 不可用模型列表:
+1. models/gemini-2.5-pro - 测试失败
+   错误: Request failed with status code 429
+2. models/gemini-2.0-flash-exp - 测试失败
+   错误: Request failed with status code 429
+3. models/gemini-2.0-flash - 测试失败
+   错误: Request failed with status code 429
+4. models/gemini-2.0-flash-001 - 测试失败
+   错误: Request failed with status code 429
+5. models/gemini-2.0-flash-exp-image-generation - 测试失败
+   错误: Request failed with status code 429
+6. models/gemini-2.0-flash-lite-001 - 测试失败
+   错误: Request failed with status code 429
+7. models/gemini-2.0-flash-lite - 测试失败
+   错误: Request failed with status code 429
+8. models/gemini-2.0-flash-lite-preview-02-05 - 测试失败
+   错误: Request failed with status code 429
+9. models/gemini-2.0-flash-lite-preview - 测试失败
+   错误: Request failed with status code 429
+10. models/gemini-exp-1206 - 测试失败
+   错误: Request failed with status code 429
+11. models/gemini-2.5-flash-preview-tts - 测试失败
+   错误: Request failed with status code 400
+12. models/gemini-2.5-pro-preview-tts - 测试失败
+   错误: Request failed with status code 429
+13. models/gemma-3-12b-it - 测试失败
+   错误: Request failed with status code 503
+14. models/gemini-pro-latest - 测试失败
+   错误: Request failed with status code 429
+15. models/gemini-2.5-flash-image - 测试失败
+   错误: Request failed with status code 429
+16. models/gemini-3-pro-preview - 测试失败
+   错误: Request failed with status code 429
+17. models/gemini-3-pro-image-preview - 测试失败
+   错误: Request failed with status code 429
+18. models/nano-banana-pro-preview - 测试失败
+   错误: Request failed with status code 429
+19. models/gemini-2.5-computer-use-preview-10-2025 - 测试失败
+   错误: Request failed with status code 429
+20. models/deep-research-pro-preview-12-2025 - 测试失败
+   错误: Request failed with status code 429
+
+⏭️ 跳过的模型列表:
+1. models/embedding-gecko-001 - 不支持 generateContent 方法
+2. models/embedding-001 - 不支持 generateContent 方法
+3. models/text-embedding-004 - 不支持 generateContent 方法
+4. models/gemini-embedding-exp-03-07 - 不支持 generateContent 方法
+5. models/gemini-embedding-exp - 不支持 generateContent 方法
+6. models/gemini-embedding-001 - 不支持 generateContent 方法
+7. models/aqa - 不支持 generateContent 方法
+8. models/imagen-4.0-generate-preview-06-06 - 不支持 generateContent 方法
+9. models/imagen-4.0-ultra-generate-preview-06-06 - 不支持 generateContent 方法
+10. models/imagen-4.0-generate-001 - 不支持 generateContent 方法
+11. models/imagen-4.0-ultra-generate-001 - 不支持 generateContent 方法
+12. models/imagen-4.0-fast-generate-001 - 不支持 generateContent 方法
+13. models/veo-2.0-generate-001 - 不支持 generateContent 方法
+14. models/veo-3.0-generate-001 - 不支持 generateContent 方法
+15. models/veo-3.0-fast-generate-001 - 不支持 generateContent 方法
+16. models/veo-3.1-generate-preview - 不支持 generateContent 方法
+17. models/veo-3.1-fast-generate-preview - 不支持 generateContent 方法
+
+📊 API 配置信息:
+   API 密钥: AIzaSyDe...
+   代理 URL: https://chatgpt-proxy.guomengtao.workers.dev
+   API 路径: /v1beta/models
+   API 版本: v1beta
