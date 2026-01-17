@@ -30,6 +30,13 @@ jobs:
         run: node ace webp:run
         env:
           NODE_ENV: production
+          # 应用配置
+          APP_KEY: ${{ secrets.APP_KEY }}
+          
+          # Cloudflare AI 配置
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_AI_TOKEN: ${{ secrets.CF_AI_TOKEN }}
+          
           # 1. 数据库连接 (Neon)
           DB_CONNECTION: pg
           PG_HOST: ${{ secrets.PG_HOST }}
