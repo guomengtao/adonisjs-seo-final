@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missing Persons Case Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="bg-gray-900 text-white py-8 px-6 rounded-lg shadow-lg mb-8">
+            <h1 class="text-3xl font-bold text-center">Missing Persons Case Details</h1>
+        </header>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <input 
+                type="text" 
+                id="caseIdInput" 
+                placeholder="Enter Case ID (e.g., rozlin-rochelle-abell)" 
+                class="w-full sm:w-64 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+            <button 
+                onclick="fetchCaseData()" 
+                class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200"
+            >
+                Load Case
+            </button>
+            <button 
+                onclick="fetchRandomCase()" 
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200"
+            >
+                Load Random Case
+            </button>
+        </div>
+        
+        <div class="flex justify-between mb-8">
+            <a href="#" id="prevBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 hidden">Previous Case</a>
+            <a href="#" id="nextBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 hidden">Next Case</a>
+        </div>
+        
+        <div id="caseContent">
+            <div class="bg-white p-10 rounded-lg shadow-md text-center text-gray-600 text-xl">Loading case data...</div>
+        </div>
+    </div>
+    
+    <script>
+        // 页面加载时获取随机案件
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRandomCase();
+        });
+        
+        // 获取随机案件ID
+        async function fetchRandomCase() {
+            try {
+                const response = await fetch('/api/case/random');
+                const data = await response.json();
+                if (data.caseId) {
+                    document.getElementById('caseIdInput').value = data.caseId;
+                    fetchCaseData();
+                }
+            } catch (error) {
+                console.error('Error fetching random case:', error);
+                displayError('Failed to load random case. Please try again.');
+            }
+        }
+        
+        // 获取指定案件数据
+        async function fetchCaseData() {
+            const caseId = document.getElementById('caseIdInput').value.trim();
+            if (!caseId) {
+                displayError('Please enter a Case ID.');
+                return;
+            }
+            
+            document.getElementById('caseContent').innerHTML = '<div class="loading">Loading case data...</div>';
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/case/${caseId}`);
+                if (response.status === 404) {
+                    displayError('Case not found. Please check the Case ID and try again.');
+                    return;
+                }
+                
+                const caseData = await response.json();
+                displayCaseData(caseData);
+            } catch (error) {
+                console.error('Error fetching case data:', error);
+                displayError('Failed to load case data. Please try again.');
+            }
+        }
+        
+        // 显示案件数据
+        function displayCaseData(data) {
+            const content = `
+                <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">${data.full_name || 'Unknown Name'}</h2>
+                    
+                    ${data.images && data.images.length > 0 ? `
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">${data.images.length} ${data.images.length === 1 ? 'Image' : 'Images'}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                ${data.images.map((img, index) => `
+                                    <div class="rounded-lg overflow-hidden shadow-md bg-white p-3">
+                                        ${img.isPrimary ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">Primary</span>` : ''}
+                                        <div class="relative">
+                                            <img src="${img.url}" alt="${img.alt || `Image ${index + 1}`}" 
+                                                 class="w-full h-auto max-h-64 object-contain transition-transform duration-300 hover:scale-105"
+                                                 ${img.width > 0 && img.height > 0 ? `width="${img.width}" height="${img.height}"` : ''}>
+                                        </div>
+                                        ${img.caption ? `<p class="text-gray-600 text-sm mt-2 italic">${img.caption}</p>` : ''}
+                                        ${img.width > 0 && img.height > 0 ? `<p class="text-gray-500 text-xs mt-1">${img.width} × ${img.height} pixels</p>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : `<div class="mb-8 p-4 bg-gray-100 rounded-lg text-gray-500">No images available</div>`}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Case ID:</span>
+                            <span class="text-gray-600">${data.case_id}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Title:</span>
+                            <span class="text-gray-600">${data.title || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Full Name:</span>
+                            <span class="text-gray-600">${data.full_name || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Missing State:</span>
+                            <span class="text-gray-600">${data.missing_state || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Age at Missing:</span>
+                            <span class="text-gray-600">${data.age_at_missing || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">AI Status:</span>
+                            <span class="text-gray-600">${data.ai_status || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Created At:</span>
+                            <span class="text-gray-600">${new Date(data.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold text-gray-700 w-32">Updated At:</span>
+                            <span class="text-gray-600">${new Date(data.updated_at).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <span class="font-semibold text-gray-700 block mb-2">Case Summary:</span>
+                        <p class="text-gray-600 whitespace-pre-wrap">${data.case_summary || 'N/A'}</p>
+                    </div>
+                    <div class="mt-4">
+                        <span class="font-semibold text-gray-700 block mb-2">URL Path:</span>
+                        <p class="text-gray-600">${data.url_path || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Recommended Cases</h3>
+                    <ul class="space-y-2">
+                        ${data.recommendations ? data.recommendations.map(rec => `
+                            <li>
+                                <a href="#" onclick="document.getElementById('caseIdInput').value='${rec.case_id}'; fetchCaseData(); return false;" 
+                                   class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    ${rec.full_name || 'Unknown Name'}
+                                </a>
+                            </li>
+                        `).join('') : '<li class="text-gray-500">No recommendations available</li>'}
+                    </ul>
+                </div>
+            `;
+            
+            document.getElementById('caseContent').innerHTML = content;
+            
+            // Update navigation buttons
+            if (data.prev_id) {
+                const prevBtn = document.getElementById('prevBtn');
+                prevBtn.classList.remove('hidden');
+                prevBtn.onclick = () => {
+                    document.getElementById('caseIdInput').value = data.prev_id;
+                    fetchCaseData();
+                    return false;
+                };
+            } else {
+                document.getElementById('prevBtn').classList.add('hidden');
+            }
+            
+            if (data.next_id) {
+                const nextBtn = document.getElementById('nextBtn');
+                nextBtn.classList.remove('hidden');
+                nextBtn.onclick = () => {
+                    document.getElementById('caseIdInput').value = data.next_id;
+                    fetchCaseData();
+                    return false;
+                };
+            } else {
+                document.getElementById('nextBtn').classList.add('hidden');
+            }
+        }
+        
+        // 显示错误信息
+        function displayError(message) {
+            document.getElementById('caseContent').innerHTML = `<div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg shadow-md"><p class="text-red-700 font-medium">${message}</p></div>`;
+        }
+        
+        // 回车键触发搜索
+        document.getElementById('caseIdInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchCaseData();
+            }
+        });
+    </script>
+</body>
+</html>
