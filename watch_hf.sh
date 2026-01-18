@@ -4,7 +4,7 @@
 # run_seo() {
 #     while true; do
 #         echo "[SEO] --- 开始新一轮处理 ---"
-#         node ace ai:seo --limit=15
+#         node ace ai:seo 
 #         echo "[SEO] --- 处理完成，休息 30 秒 ---"
 #         sleep 30
 #     done
@@ -14,7 +14,7 @@
 run_webp() {
     while true; do
         echo "[GEO] --- 开始新一轮处理 ---"
-        node ace webp:run --limit=1
+        node ace webp:run 
         echo "[GEO] --- 处理完成，休息 30 秒 ---"
         sleep 30
     done
