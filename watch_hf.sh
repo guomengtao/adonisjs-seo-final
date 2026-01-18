@@ -16,7 +16,7 @@ run_webp() {
         echo "[GEO] --- 开始新一轮处理 ---"
         node ace webp:run 
         echo "[GEO] --- 处理完成，休息 30 秒 ---"
-        sleep 600
+        sleep 660
     done
 }
 
