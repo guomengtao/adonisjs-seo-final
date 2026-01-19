@@ -1,0 +1,119 @@
+import axios from 'axios';
+import env from '#start/env';
+
+export default class GeminiService {
+  private static instance: GeminiService;
+  private apiKey: string;
+  private baseUrl: string = 'https://chatgpt-proxy.guomengtao.workers.dev';
+  private availableModels: string[] = [
+    'models/gemini-2.5-flash',
+    'models/gemma-3-1b-it',
+    'models/gemma-3-4b-it',
+    'models/gemma-3-27b-it',
+    'models/gemma-3n-e4b-it',
+    'models/gemma-3n-e2b-it',
+    'models/gemini-flash-latest',
+    'models/gemini-flash-lite-latest',
+    'models/gemini-2.5-flash-lite',
+    'models/gemini-2.5-flash-preview-09-2025',
+    'models/gemini-2.5-flash-lite-preview-09-2025',
+    'models/gemini-3-flash-preview',
+    'models/gemini-robotics-er-1.5-preview'
+  ];
+
+  private constructor() {
+    // 获取API密钥
+    this.apiKey = env.get('GEMINI_API_KEY') || '';
+  }
+
+  public static getInstance(): GeminiService {
+    if (!GeminiService.instance) {
+      GeminiService.instance = new GeminiService();
+    }
+    return GeminiService.instance;
+  }
+
+  public async generateMultiLangSummary(details: string, modelIndex: number = 0): Promise<Array<{ lang: string; summary: string }> | null> {
+    try {
+      const modelName = this.availableModels[modelIndex] || this.availableModels[0];
+      console.log(`🔤 使用模型: ${modelName} 生成多语言摘要...`);
+
+      const prompt = `你是一位精通中文、英语、西班牙语的国际寻人专家和多语言 SEO 资深编辑。请分析以下失踪详情：
+${details}
+
+任务：为该案件生成中、英、西三语的 SEO 摘要（Summary）。
+
+输出格式要求（必须是合法 JSON，严禁任何额外解释）：
+JSON
+[
+  {
+    "lang": "zh",
+    "summary": "（150-300字的中文摘要。结构：姓名+时间+地点；核心体貌/衣着特征；呼吁行动。）"
+  },
+  {
+    "lang": "en",
+    "summary": "（150-300 words English summary. Professional, native tone, no robotic translation.）"
+  },
+  {
+    "lang": "es",
+    "summary": "（Resumen en español de 150-300 palabras. Estilo natural y urgente para búsqueda de personas.）"
+  }
+]
+
+字段约束准则（严格遵守数据库 NOT NULL 约束）：
+lang: 必须且只能是 zh, en, es 中的一个。
+summary: 严禁为空。如果原文信息极少，请根据已知碎片信息进行合理扩充描述。
+
+内容策略:
+英文摘要需符合母语习惯（使用 "Last seen wearing", "Anyone with information" 等）。
+西语摘要需地道（使用 "Visto por última vez", "Se solicita colaboración" 等）。
+语言风格需庄重、客观，禁止使用感叹号。`;
+
+      // 使用代理发送请求
+      const response = await axios.post(`${this.baseUrl}/v1beta/models/${modelName.replace('models/', '')}:generateContent`, {
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ]
+      }, {
+        params: { key: this.apiKey }
+      });
+
+      const text = response.data.candidates[0].content.parts[0].text;
+
+      // 清理AI输出，确保是纯JSON
+      const cleanText = text.replace(/^```json|```$/g, '').trim();
+      const summaries = JSON.parse(cleanText);
+
+      // 验证输出格式
+      if (!Array.isArray(summaries) || summaries.length !== 3) {
+        throw new Error('AI返回的摘要格式不正确');
+      }
+
+      // 验证每个摘要的语言和内容
+      for (const summary of summaries) {
+        if (!['zh', 'en', 'es'].includes(summary.lang)) {
+          throw new Error(`无效的语言代码: ${summary.lang}`);
+        }
+        if (!summary.summary || summary.summary.trim() === '') {
+          throw new Error(`摘要内容为空: ${summary.lang}`);
+        }
+      }
+
+      return summaries;
+    } catch (error) {
+      console.error('❌ Gemini AI 生成摘要失败:', error.message);
+      
+      // 如果当前模型失败，尝试下一个模型
+      if (modelIndex < this.availableModels.length - 1) {
+        console.log(`🔄 尝试下一个模型 (${modelIndex + 1}/${this.availableModels.length})...`);
+        return this.generateMultiLangSummary(details, modelIndex + 1);
+      }
+      
+      return null;
+    }
+  }
+}

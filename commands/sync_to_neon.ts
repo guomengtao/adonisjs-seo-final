@@ -13,7 +13,7 @@ export default class SyncToNeon extends BaseCommand {
     const db = await this.app.container.make('lucid.db')
 
     try {
-      const tables = ['missing_persons_cases', 'missing_persons_info', 'missing_persons_assets']
+      const tables = ['missing_persons_cases', 'missing_persons_info', 'missing_persons_assets', 'case_summaries']
 
       for (const table of tables) {
         this.logger.info(`正在处理表: ${table}`)
