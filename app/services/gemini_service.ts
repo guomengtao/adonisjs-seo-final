@@ -4,7 +4,9 @@ import env from '#start/env';
 export default class GeminiService {
   private static instance: GeminiService;
   private apiKey: string;
-  private baseUrl: string = 'https://chatgpt-proxy.guomengtao.workers.dev';
+  private baseUrl: string = 'https://chatgpt-proxy.gudq.com';
+  // private baseUrl: string = 'https://chatgpt-proxy.guomengtao.workers.dev';
+
   private availableModels: string[] = [
     'models/gemini-2.5-flash',
     'models/gemma-3-1b-it',
