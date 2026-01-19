@@ -50,16 +50,16 @@ export default class GeminiSummaryRun extends BaseCommand {
 
       // 5. 使用Gemini AI生成多语言摘要
       const geminiService = GeminiService.getInstance();
-      const summaries = await geminiService.generateMultiLangSummary(cleanText);
+      const { summaries, modelName } = await geminiService.generateMultiLangSummary(cleanText);
 
-      if (!summaries) {
+      if (!summaries || !modelName) {
         this.logger.error(`❌ 案件 ${case_id} 摘要生成失败，跳过`);
         await this.updateTaskProgress(id);
         return;
       }
 
       // 6. 将结果写入数据库
-      await this.saveSummaries(case_id, summaries);
+      await this.saveSummaries(case_id, summaries, modelName);
 
       this.logger.success(`✅ 案件 ${case_id} 摘要生成完成`);
 
@@ -124,7 +124,7 @@ export default class GeminiSummaryRun extends BaseCommand {
     return text.substring(0, 2000);
   }
 
-  private async saveSummaries(caseId: string, summaries: Array<{ lang: string; summary: string }>) {
+  private async saveSummaries(caseId: string, summaries: Array<{ lang: string; summary: string }>, modelName: string) {
     try {
       // 1. 验证输入参数
       if (!caseId || !summaries || summaries.length === 0) {
@@ -172,8 +172,8 @@ export default class GeminiSummaryRun extends BaseCommand {
           if (existing.rows && existing.rows.length > 0) {
             // 更新记录
             const updateResult = await db.connection('pg').rawQuery(
-              `UPDATE case_summaries SET summary = ?, updated_at = ? WHERE case_id = ? AND lang = ?`,
-              [content, new Date().toISOString(), caseId, lang]
+              `UPDATE case_summaries SET summary = ?, ai_model = ?, updated_at = ? WHERE case_id = ? AND lang = ?`,
+              [content, modelName, new Date().toISOString(), caseId, lang]
             );
             
             // 检查更新是否成功
@@ -187,7 +187,7 @@ export default class GeminiSummaryRun extends BaseCommand {
             // 插入新记录
             const insertResult = await db.connection('pg').rawQuery(
               `INSERT INTO case_summaries (case_id, lang, summary, ai_model, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-              [caseId, lang, content, 'models/gemini-2.5-flash', new Date().toISOString(), new Date().toISOString()]
+              [caseId, lang, content, modelName, new Date().toISOString(), new Date().toISOString()]
             );
             
             // 检查插入是否成功

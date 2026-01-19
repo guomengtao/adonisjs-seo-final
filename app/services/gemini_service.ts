@@ -35,7 +35,7 @@ export default class GeminiService {
     return GeminiService.instance;
   }
 
-  public async generateMultiLangSummary(details: string, modelIndex: number = 0): Promise<Array<{ lang: string; summary: string }> | null> {
+  public async generateMultiLangSummary(details: string, modelIndex: number = 0): Promise<{ summaries: Array<{ lang: string; summary: string }> | null; modelName: string | null }> {
     try {
       const modelName = this.availableModels[modelIndex] || this.availableModels[0];
       console.log(`🔤 使用模型: ${modelName} 生成多语言摘要...`);
@@ -105,7 +105,7 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
         }
       }
 
-      return summaries;
+      return { summaries, modelName };
     } catch (error) {
       console.error('❌ Gemini AI 生成摘要失败:', error.message);
       
@@ -115,7 +115,7 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
         return this.generateMultiLangSummary(details, modelIndex + 1);
       }
       
-      return null;
+      return { summaries: null, modelName: null };
     }
   }
 }

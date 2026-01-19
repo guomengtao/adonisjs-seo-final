@@ -43,15 +43,16 @@ export default class GeminiSummaryTest extends BaseCommand {
       const geminiService = GeminiService.getInstance();
       this.logger.info('🔤 正在生成多语言摘要...');
       
-      const summaries = await geminiService.generateMultiLangSummary(cleanText);
+      const { summaries, modelName } = await geminiService.generateMultiLangSummary(cleanText);
 
-      if (!summaries) {
+      if (!summaries || !modelName) {
         this.logger.error(`❌ 摘要生成失败`);
         return;
       }
 
       // 显示结果
       this.logger.success('✅ 摘要生成成功！');
+      this.logger.info(`💡 使用的模型: ${modelName}`);
       this.logger.info('\n📋 生成的多语言摘要：');
       
       for (const summary of summaries) {
