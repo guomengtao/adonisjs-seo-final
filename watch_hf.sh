@@ -6,8 +6,8 @@ run_summary() {
         echo "[SUM] --- 开始新一轮处理 ---"
         # node ace ai:seo 
         node ace gemini:summary 
-        echo "[SUM] --- 处理完成，休息 501 秒 ---"
-        sleep 501
+        echo "[SUM] --- 处理完成，休息 31 秒 ---"
+        sleep 31
     done
 }
 
