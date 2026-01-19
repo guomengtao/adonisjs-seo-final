@@ -118,4 +118,73 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
       return { summaries: null, modelName: null };
     }
   }
+
+  public async generateMultiLangTags(details: string, modelIndex: number = 0): Promise<{ tags: Array<{ slug: string; en: string; zh: string; es: string }> | null; modelName: string | null }> {
+    try {
+      const modelName = this.availableModels[modelIndex] || this.availableModels[0];
+      console.log(`🔤 使用模型: ${modelName} 生成多语言标签...`);
+
+      const prompt = `你是一个专业的数据结构化专家，负责分析失踪人口案件并提取核心标签。
+任务目标：请阅读提供的案件描述，提取 10-15 个具有高度辨识度的关键词标签。
+提取维度（优先提取）：
+失踪场景：如"远足失踪"、"深夜最后露面"、"校车未归"。
+体貌特征：如"左臂纹身"、"十字架项链"、"戴红色棒球帽"。
+健康状况：如"患有阿尔兹海默症"、"需要定期服药"。
+物品/车辆：如"白色丰田卡罗拉"、"蓝色双肩包"。注意:不要州 县 城市 性别 这4个tag因为已经知道了。
+强制约束规则：
+语言：每个标签必须包含中文 (zh)、英文 (en)、西班牙语 (es)。
+URL 安全 (Slug)：为英文标签生成一个 slug 。规则：仅限小写字母、数字和中划线 - ，严禁空格和特殊字符。
+禁止符号：标签名称中严禁出现 #, ?, !, *, @ 等符号。
+输出格式：必须严格返回一个 JSON 数组，格式如下：[{"slug": "white-toyota", "en": "White Toyota", "zh": "白色丰田", "es": "Toyota blanco"}]
+案件描述内容：
+${details}`;
+
+      // 使用代理发送请求
+      const response = await axios.post(`${this.baseUrl}/v1beta/models/${modelName.replace('models/', '')}:generateContent`, {
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ]
+      }, {
+        params: { key: this.apiKey }
+      });
+
+      const text = response.data.candidates[0].content.parts[0].text;
+
+      // 清理AI输出，确保是纯JSON
+      const cleanText = text.replace(/^```json|```$/g, '').trim();
+      const tags = JSON.parse(cleanText);
+
+      // 验证输出格式
+      if (!Array.isArray(tags)) {
+        throw new Error('AI返回的标签格式不正确');
+      }
+
+      // 验证每个标签的格式
+      for (const tag of tags) {
+        if (!tag.slug || !tag.en || !tag.zh || !tag.es) {
+          throw new Error(`标签缺少必要字段: ${JSON.stringify(tag)}`);
+        }
+        // 验证slug格式
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag.slug)) {
+          throw new Error(`无效的slug格式: ${tag.slug}`);
+        }
+      }
+
+      return { tags, modelName };
+    } catch (error) {
+      console.error('❌ Gemini AI 生成标签失败:', error.message);
+      
+      // 如果当前模型失败，尝试下一个模型
+      if (modelIndex < this.availableModels.length - 1) {
+        console.log(`🔄 尝试下一个模型 (${modelIndex + 1}/${this.availableModels.length})...`);
+        return this.generateMultiLangTags(details, modelIndex + 1);
+      }
+      
+      return { tags: null, modelName: null };
+    }
+  }
 }

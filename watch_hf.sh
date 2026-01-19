@@ -21,9 +21,20 @@ run_webp() {
     done
 }
 
+
+# 处理 TAG 任务的函数
+run_tag() {
+    while true; do
+        echo "[TAG] --- 开始新一轮处理 ---"
+        node ace gemini:tags 
+        echo "[TAG] --- 处理完成，休息 20 秒 ---"
+        sleep 20
+    done
+}
 # 同时在后台启动两个任务
 run_summary &
 run_webp &
+run_tag &
 
 # 保持主进程不退出，否则容器会关闭
 wait
