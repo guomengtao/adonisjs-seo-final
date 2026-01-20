@@ -1,6 +1,7 @@
 import { BaseCommand } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
 import GeminiService from '#services/gemini_service';
+import { validateSummaryLanguage } from '../app/utils/language_validator.js';
 
 export default class GeminiSummaryRun extends BaseCommand {
   static commandName = 'gemini:summary';
@@ -163,6 +164,16 @@ export default class GeminiSummaryRun extends BaseCommand {
           // 验证单个摘要内容
           if (!lang || !content) {
             this.logger.error(`   ❌ 摘要内容错误: ${lang || '未知语言'}的摘要为空`);
+            continue;
+          }
+          
+          // 验证摘要的语言正确性
+          const languageValidation = validateSummaryLanguage({ lang, summary: content });
+          if (!languageValidation.isValid) {
+            this.logger.error(`   ❌ 摘要语言验证失败: ${lang.toUpperCase()}`);
+            languageValidation.errors.forEach((error: string) => {
+              this.logger.error(`      ${error}`);
+            });
             continue;
           }
           

@@ -1,6 +1,7 @@
 import { BaseCommand } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
 import GeminiService from '#services/gemini_service';
+import { validateTagLanguages } from '../app/utils/language_validator.js';
 
 export default class GeminiTagsRun extends BaseCommand {
   static commandName = 'gemini:tags';
@@ -207,6 +208,16 @@ export default class GeminiTagsRun extends BaseCommand {
           // 验证单个标签内容
           if (!slug || !en || !zh || !es) {
             this.logger.error(`   ❌ 标签内容错误: slug=${slug}, en=${en}, zh=${zh}, es=${es}`);
+            continue;
+          }
+          
+          // 验证标签的语言正确性
+          const languageValidation = validateTagLanguages({ slug, en, zh, es });
+          if (!languageValidation.isValid) {
+            this.logger.error(`   ❌ 标签语言验证失败: ${slug}`);
+            languageValidation.errors.forEach((error: string) => {
+              this.logger.error(`      ${error}`);
+            });
             continue;
           }
           

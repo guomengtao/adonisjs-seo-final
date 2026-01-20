@@ -1,0 +1,42 @@
+{
+  "search_placeholder": {
+    "zh": "搜索失踪人员...",
+    "en": "Search for missing persons...",
+    "es": "Buscar personas desaparecidas..."
+  },
+  "case_detail": {
+    "zh": "案例详情",
+    "en": "Case Detail",
+    "es": "Detalles del caso"
+  },
+  "website_name": {
+    "zh": "GUDQ 寻人",
+    "en": "GUDQ Missing Persons",
+    "es": "GUDQ Personas Desaparecidas"
+  },
+  "tags": {
+    "zh": "关键特征标签",
+    "en": "Key Feature Tags",
+    "es": "Etiquetas de Características Clave"
+  },
+  "missing_report": {
+    "zh": "失踪报告",
+    "en": "Missing Report",
+    "es": "Informe de Desaparición"
+  },
+  "language_zh": {
+    "zh": "中文",
+    "en": "Chinese",
+    "es": "Chino"
+  },
+  "language_en": {
+    "zh": "英文",
+    "en": "English",
+    "es": "Inglés"
+  },
+  "language_es": {
+    "zh": "西班牙语",
+    "en": "Spanish",
+    "es": "Español"
+  }
+}

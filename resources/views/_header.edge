@@ -1,0 +1,49 @@
+<nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800">
+  <div class="max-w-6xl mx-auto px-4 lg:px-8 py-3">
+    <!-- 第一行：Logo/返回按钮和语言切换 -->
+    <div class="flex justify-between items-center mb-3">
+      <div class="flex items-center gap-4">
+        <!-- Logo -->
+        <a href="/" class="hidden md:block flex items-center group transition-all hover:text-white">
+          <div class="w-8 h-8 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+            <svg viewBox="0 0 100 100" class="w-full h-full">
+              <path d="M 82 32 C 75 18, 60 10, 50 10 C 28 10, 10 28, 10 50 C 10 72, 28 90, 50 90 C 72 90, 90 72, 90 50 L 90 48 L 55 48 L 55 60 L 78 60 C 75 72, 63 80, 50 80 C 33 80, 20 67, 20 50 C 20 33, 33 20, 50 20 C 58 20, 65 24, 71 30 Z" fill="#3B82F6"/>
+            </svg>
+          </div>
+          <span class="ml-2 text-sm text-slate-400 group-hover:text-blue-400 font-medium">
+            {{ i18n.formatMessage('ui.website_name') }}
+          </span>
+        </a>
+        
+        <!-- 返回按钮（手机端显示） -->
+        <a href="/" class="md:hidden flex items-center group transition-all hover:text-white">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        
+        <span class="hidden md:block text-slate-500">/</span>
+        <span class="text-sm font-medium truncate max-w-[150px] md:max-w-none">
+          {{ pageTitle || i18n.formatMessage('ui.case_detail') || '案例详情' }}
+        </span>
+      </div>
+      <div class="flex gap-3 text-[11px] font-bold tracking-widest">
+        <a href="?lang=zh" class="{{ lang === 'zh' ? 'text-blue-400' : 'text-slate-600' }} hover:text-blue-300">ZH</a>
+        <a href="?lang=en" class="{{ lang === 'en' ? 'text-blue-400' : 'text-slate-600' }} hover:text-blue-300">EN</a>
+        <a href="?lang=es" class="{{ lang === 'es' ? 'text-blue-400' : 'text-slate-600' }} hover:text-blue-300">ES</a>
+      </div>
+    </div>
+    
+    <!-- 第二行：搜索框单独一行 -->
+    <div class="relative">
+      <input 
+        type="text" 
+        placeholder="{{ i18n.formatMessage('ui.search_placeholder') }}" 
+        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+      <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="{{ lang || 'zh' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>{{ missingCase ? (missingCase[`name_${lang}`] || missingCase.name) + ' - GUDQ 寻人' : 'GUDQ 寻人' }}</title>
+  
+  <!-- CSS 引入 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    /* 隐藏电脑端滚动条，保持简洁 */
+    @media (min-width: 1024px) { ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } }
+  </style>
+  
+  <!-- JSON-LD 结构化数据 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "GUDQ 寻人",
+    "url": "{{ lang == 'en' ? 'https://gudata.org/en' : 'https://gudata.org' }}",
+    "description": "全球寻人数据库 - 帮助寻找失踪人员的专业平台",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ lang == 'en' ? 'https://gudata.org/en/search?q={search_term_string}' : 'https://gudata.org/search?q={search_term_string}' }}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  
+  <!-- 案件特定的JSON-LD结构化数据 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "首页",
+      "item": "https://cn.missing.gudq.com"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ missingCase.missing_state }}",
+      "item": "https://cn.missing.gudq.com/{{ missingCase.missing_state?.toLowerCase() }}"
+    },{
+      "@type": "ListItem",
+      "position": 3,
+      "name": "案件详情"
+    }]
+  }
+  </script>
+</head>
