@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>{{ missingCase ? (missingCase[`name_${lang}`] || missingCase.name) + ' - GUDQ 寻人' : 'GUDQ 寻人' }}</title>
+  <title>{{ missingCase ? (lang === 'zh' ? '寻找 ' + (missingCase[`name_${lang}`] || missingCase.name) + ' - ' + (missingCase.missing_since ? missingCase.missing_since.substr(0, 4) + '年' : '') + (missingCase.missing_state ? missingCase.missing_state : '') + '失踪案件详情 - GUDQ 全球寻人' : (missingCase[`name_${lang}`] || missingCase.name) + ' Missing Person Case Details - ' + (missingCase.missing_since ? missingCase.missing_since.substr(0, 4) + ' - ' : '') + 'GUDQ Global Missing Persons') : (lang === 'zh' ? 'GUDQ 全球寻人 - 寻找失踪人员' : 'GUDQ Global Missing Persons Database') }}</title>
+  <meta name="description" content="{{ missingCase ? (lang === 'zh' ? '寻找' + (missingCase[`name_${lang}`] || missingCase.name) + ' - ' + (missingCase.missing_since ? missingCase.missing_since.substr(0, 4) + '年' : '') + (missingCase.missing_state ? missingCase.missing_state : '') + '失踪人员案件详情，提供完整的寻人信息。' : (missingCase[`name_${lang}`] || missingCase.name) + ' Missing Person Case Details - ' + (missingCase.missing_since ? missingCase.missing_since.substr(0, 4) + ' - ' : '') + (missingCase.missing_state ? missingCase.missing_state : '') + ' | GUDQ Global Missing Persons Database.') : 'GUDQ Global Missing Persons Database - Helping find missing individuals worldwide.' }}">
+  <link rel="canonical" href="{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : 'https://en.missing.gudq.com' }}{{ urlPathSegments.length ? '/' + urlPathSegments.join('/') : '' }}">
   
   <!-- CSS 引入 -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,37 +21,69 @@
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "GUDQ 寻人",
-    "url": "{{ lang == 'en' ? 'https://gudata.org/en' : 'https://gudata.org' }}",
-    "description": "全球寻人数据库 - 帮助寻找失踪人员的专业平台",
+    "name": "GUDQ Global Missing Persons",
+    "url": "https://gudata.org",
+    "description": "Global Missing Persons Database - Professional platform to help find missing individuals",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "{{ lang == 'en' ? 'https://gudata.org/en/search?q={search_term_string}' : 'https://gudata.org/search?q={search_term_string}' }}",
+      "target": "https://gudata.org/search?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   }
   </script>
   
-  <!-- 案件特定的JSON-LD结构化数据 -->
+  <!-- Person类型结构化数据 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "{{ missingCase[`name_${lang}`] || missingCase.name }}",
+    "gender": "{{ missingCase.sex }}",
+    "birthDate": "{{ missingCase.date_of_birth }}",
+    "height": "{{ missingCase.height }}"
+  }
+  </script>
+  
+  <!-- 案件特定的BreadcrumbList结构化数据 -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": [{
-      "@type": "ListItem",
-      "position": 1,
-      "name": "首页",
-      "item": "https://cn.missing.gudq.com"
-    },{
-      "@type": "ListItem",
-      "position": 2,
-      "name": "{{ missingCase.missing_state }}",
-      "item": "https://cn.missing.gudq.com/{{ missingCase.missing_state?.toLowerCase() }}"
-    },{
-      "@type": "ListItem",
-      "position": 3,
-      "name": "案件详情"
-    }]
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "{{ lang === 'zh' ? '首页' : lang === 'es' ? 'Inicio' : 'Home' }}",
+        "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://en.missing.gudq.com' }}"
+      }
+      @if(urlPathSegments.length >= 1)
+      ,
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "{{ translatedPathSegments && translatedPathSegments[0] ? translatedPathSegments[0] : urlPathSegments[0] }}",
+        "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://en.missing.gudq.com' }}/{{ urlPathSegments[0] }}"
+      }
+      @endif
+      @if(urlPathSegments.length >= 2)
+      ,
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "{{ translatedPathSegments && translatedPathSegments[1] ? translatedPathSegments[1] : urlPathSegments[1] }}",
+        "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://en.missing.gudq.com' }}/{{ urlPathSegments[0] }}/{{ urlPathSegments[1] }}"
+      }
+      @endif
+      @if(urlPathSegments.length >= 3)
+      ,
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": "{{ missingCase[`name_${lang}`] || missingCase.name }}",
+        "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://en.missing.gudq.com' }}/{{ urlPathSegments.join('/') }}"
+      }
+      @endif
+    ]
   }
   </script>
 </head>

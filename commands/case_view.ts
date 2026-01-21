@@ -38,7 +38,9 @@ interface CaseInfo {
   id: number
   case_id: string
   full_name: string
-  missing_state: string
+  state_ref: string
+  county_fips_ref: string
+  city_geo_id: number
   age_at_missing: number | null
   title: string
   case_summary: string
@@ -49,6 +51,9 @@ interface CaseInfo {
   prev_id: string | null
   next_id: string | null
   recommendations: Recommendation[] | null
+  state_name: string
+  county_name: string
+  city_name: string
 }
 
 export default class CaseView extends BaseCommand {
@@ -95,19 +100,28 @@ export default class CaseView extends BaseCommand {
       // 查询案件基本信息和相关数据
       const caseData = await db.rawQuery<DbQueryResult<CaseInfo>>(`
         WITH current_case AS (
-          SELECT id, case_id, full_name, missing_state, age_at_missing, title, case_summary, url_path, ai_status, created_at, updated_at FROM missing_persons_info WHERE case_id = ?
+          SELECT id, case_id, full_name, state_ref, county_fips_ref, city_geo_id, age_at_missing, url_path, ai_status, created_at, updated_at 
+          FROM missing_persons_info 
+          WHERE case_id = ?
         )
         SELECT
           c.*,
+          COALESCE(st.zh_name, st.en_name) as state_name,
+          COALESCE(co.zh_name, co.en_name) as county_name,
+          COALESCE(ci.zh_name, ci.en_name) as city_name,
           (SELECT case_id FROM missing_persons_info WHERE id < c.id ORDER BY id DESC LIMIT 1) as prev_id,
           (SELECT case_id FROM missing_persons_info WHERE id > c.id ORDER BY id ASC LIMIT 1) as next_id,
           (SELECT jsonb_agg(r) FROM (
             SELECT case_id, full_name FROM missing_persons_info
-            WHERE missing_state = c.missing_state AND case_id != c.case_id
+            WHERE state_ref = c.state_ref AND case_id != c.case_id
             LIMIT 4
           ) r) as recommendations
         FROM current_case c
-      `, [caseId])
+        LEFT JOIN geo_translations st ON UPPER(c.state_ref) = st.fips_code AND st.geo_type = ?
+        LEFT JOIN geo_translations co ON c.county_fips_ref = co.fips_code AND co.geo_type = ?
+        LEFT JOIN geo_translations ci ON c.city_geo_id = ci.geoname_id
+      `, [caseId, 'state', 'county']
+      )
 
       if (caseData.rows.length === 0) {
         console.error(`❌ 未找到案件 ${caseId}`)
@@ -144,7 +158,7 @@ export default class CaseView extends BaseCommand {
       console.log('\n📋 案件基本信息：')
       console.log(`案件 ID: ${caseInfo.case_id}`)
       console.log(`姓名: ${caseInfo.full_name}`)
-      console.log(`失踪地点: ${caseInfo.missing_state}`)
+      console.log(`失踪地点: ${caseInfo.state_name} ${caseInfo.county_name || ''} ${caseInfo.city_name || ''}`)
       console.log(`失踪年龄: ${caseInfo.age_at_missing}`)
       console.log(`标题: ${caseInfo.title}`)
       console.log(`案件摘要: ${caseInfo.case_summary}`)

@@ -1,4 +1,9 @@
 {
+  "home": {
+    "zh": "首页",
+    "en": "Home",
+    "es": "Inicio"
+  },
   "search_placeholder": {
     "zh": "搜索失踪人员...",
     "en": "Search for missing persons...",
@@ -19,6 +24,11 @@
     "en": "Key Feature Tags",
     "es": "Etiquetas de Características Clave"
   },
+  "case_details": {
+    "zh": "案件详细信息",
+    "en": "Case Details",
+    "es": "Detalles del Caso"
+  },
   "missing_report": {
     "zh": "失踪报告",
     "en": "Missing Report",
@@ -38,5 +48,90 @@
     "zh": "西班牙语",
     "en": "Spanish",
     "es": "Español"
+  },
+  "personal_info": {
+    "zh": "个人信息",
+    "en": "Personal Information",
+    "es": "Información personal"
+  },
+  "full_name": {
+    "zh": "姓名",
+    "en": "Name",
+    "es": "Nombre completo"
+  },
+  "age_at_missing": {
+    "zh": "失踪时年龄",
+    "en": "Age at Missing",
+    "es": "Edad en el momento de la desaparición"
+  },
+  "date_of_birth": {
+    "zh": "出生日期",
+    "en": "Date of Birth",
+    "es": "Fecha de nacimiento"
+  },
+  "sex": {
+    "zh": "性别",
+    "en": "Sex",
+    "es": "Sexo"
+  },
+  "race": {
+    "zh": "种族",
+    "en": "Race",
+    "es": "Raza"
+  },
+  "height": {
+    "zh": "身高",
+    "en": "Height",
+    "es": "Altura"
+  },
+  "weight": {
+    "zh": "体重",
+    "en": "Weight",
+    "es": "Peso"
+  },
+  "missing_info": {
+    "zh": "失踪信息",
+    "en": "Missing Information",
+    "es": "Información de desaparición"
+  },
+  "missing_since": {
+    "zh": "失踪日期",
+    "en": "Missing Since",
+    "es": "Desaparecido desde"
+  },
+  "missing_state": {
+    "zh": "失踪州",
+    "en": "Missing State",
+    "es": "Estado de desaparición"
+  },
+  "missing_city": {
+    "zh": "失踪城市",
+    "en": "Missing City",
+    "es": "Ciudad de desaparición"
+  },
+  "missing_county": {
+    "zh": "失踪县",
+    "en": "Missing County",
+    "es": "Condado de desaparición"
+  },
+  "investigating_agency": {
+    "zh": "调查机构",
+    "en": "Investigating Agency",
+    "es": "Agencia investigadora"
+  },
+  "distinguishing_marks": {
+    "zh": "显著特征",
+    "en": "Distinguishing Marks",
+    "es": "Marcas distintivas"
+  },
+  "location_details": {
+    "zh": "失踪地点详情",
+    "en": "Location Details",
+    "es": "Detalles de la ubicación"
+  },
+  "case_summary": {
+    "zh": "案件概述",
+    "en": "Case Summary",
+    "es": "Resumen del caso"
   }
 }

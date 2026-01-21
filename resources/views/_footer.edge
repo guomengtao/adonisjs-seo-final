@@ -13,7 +13,7 @@
   </a>
 </div>
 
-<!-- JSON-LD结构化数据 -->
+<!-- JSON-LD structured data -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -21,17 +21,17 @@
   "itemListElement": [{
     "@type": "ListItem",
     "position": 1,
-    "name": "首页",
-    "item": "https://cn.missing.gudq.com"
+    "name": "{{ i18n.formatMessage('ui.home') || 'Home' }}",
+    "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://missing.gudq.com' }}"
   },{
     "@type": "ListItem",
     "position": 2,
     "name": "{{ missingCase.missing_state }}",
-    "item": "https://cn.missing.gudq.com/{{ missingCase.missing_state?.toLowerCase() }}"
+    "item": "{{ lang === 'zh' ? 'https://cn.missing.gudq.com' : lang === 'es' ? 'https://es.missing.gudq.com' : 'https://missing.gudq.com' }}/{{ missingCase.missing_state?.toLowerCase() }}"
   },{
     "@type": "ListItem",
     "position": 3,
-    "name": "案件详情"
+    "name": "{{ i18n.formatMessage('ui.case_detail') || 'Case Detail' }}"
   }]
 }
 </script>

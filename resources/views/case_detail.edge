@@ -2,7 +2,7 @@
 
 <body class="bg-slate-950 text-slate-200 min-h-screen">
 
-  <!-- 引用共用头部模板 -->
+  <!-- Include common header template -->
   @include('_header')
 
   <main class="max-w-6xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
@@ -10,15 +10,33 @@
       
       <div class="lg:col-span-2 space-y-8">
         
-        {{-- 电脑端面包屑导航 --}}
+        {{-- Desktop breadcrumb navigation --}}
         <div class="hidden md:block text-sm text-slate-500 py-2">
-          <a href="/" class="hover:text-blue-400 transition-colors">首页</a>
-          <span class="mx-2">/</span>
-          <a href="/{{ missingCase.missing_state?.toLowerCase() }}" class="hover:text-blue-400 transition-colors">
-            {{ missingCase.missing_state }}
+          <a href="/" class="hover:text-blue-400 transition-colors">
+            {{ i18n.formatMessage('ui.home') || '首页' }}
           </a>
           <span class="mx-2">/</span>
-          <span class="text-slate-400">案件详情</span>
+          @if(urlPathSegments.length >= 1 && translatedPathSegments)
+            <a href="/{{ urlPathSegments[0] }}" class="hover:text-blue-400 transition-colors">
+              {{ translatedPathSegments[0].toUpperCase() }}
+            </a>
+            <span class="mx-2">/</span>
+          @endif
+          @if(urlPathSegments.length >= 2 && translatedPathSegments)
+            <a href="/{{ urlPathSegments[0] }}/{{ urlPathSegments[1] }}" class="hover:text-blue-400 transition-colors">
+              {{ translatedPathSegments[1].toUpperCase() }}
+            </a>
+            <span class="mx-2">/</span>
+          @endif
+          @if(urlPathSegments.length >= 3 && translatedPathSegments)
+            <a href="/{{ urlPathSegments[0] }}/{{ urlPathSegments[1] }}/{{ urlPathSegments[2] }}" class="hover:text-blue-400 transition-colors">
+              {{ translatedPathSegments[2].toUpperCase() }}
+            </a>
+            <span class="mx-2">/</span>
+          @endif
+          <span class="text-slate-400">
+            {{ missingCase[`name_${lang}`] || missingCase.name }}
+          </span>
         </div>
         
         <header>
@@ -42,6 +60,131 @@
           <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Intel Summary</h2>
           <div class="text-slate-200 leading-relaxed text-lg md:text-xl font-light italic">
             "{{ missingCase[`summary_${lang}`] }}"
+          </div>
+        </section>
+
+        <!-- Case details -->
+        <section class="bg-slate-900/50 rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl">
+          <h2 class="text-lg font-bold text-white mb-6">{{ lang === 'zh' ? (missingCase[`name_${lang}`] || missingCase.name) + ' 的案件详细信息' : (missingCase[`name_${lang}`] || missingCase.name) + ' Case Details' }}</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Personal information -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white mb-4">{{ i18n.formatMessage('ui.personal_info') || '个人信息' }}</h3>
+              
+              @if(missingCase.full_name)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.full_name') || '姓名' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.full_name }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.age_at_missing)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.age_at_missing') || '失踪时年龄' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.age_at_missing }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.date_of_birth)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.date_of_birth') || '出生日期' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.date_of_birth }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.sex)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.sex') || '性别' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.sex }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.race)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.race') || '种族' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.race }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.height)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.height') || '身高' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.height }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.weight)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.weight') || '体重' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.weight }}</span>
+                </div>
+              @endif
+            </div>
+            
+            <!-- Missing information -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white mb-4">{{ i18n.formatMessage('ui.missing_info') || '失踪信息' }}</h3>
+              
+              @if(missingCase.missing_since)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.missing_since') || '失踪日期' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.missing_since }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.missing_state)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.missing_state') || '失踪州' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.missing_state }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.missing_city)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.missing_city') || '失踪城市' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.missing_city }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.missing_county)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.missing_county') || '失踪县' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.missing_county }}</span>
+                </div>
+              @endif
+              
+              @if(missingCase.investigating_agency)
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">{{ i18n.formatMessage('ui.investigating_agency') || '调查机构' }}</span>
+                  <span class="text-white font-medium">{{ missingCase.investigating_agency }}</span>
+                </div>
+              @endif
+            </div>
+          </div>
+          
+          <!-- Additional details -->
+          <div class="mt-8 space-y-4">
+            @if(missingCase.distinguishing_marks)
+              <div>
+                <h3 class="text-lg font-semibold text-white mb-2">{{ i18n.formatMessage('ui.distinguishing_marks') || '显著特征' }}</h3>
+                <p class="text-slate-400">{{ missingCase.distinguishing_marks }}</p>
+              </div>
+            @endif
+            
+            @if(missingCase.location_details)
+              <div>
+                <h3 class="text-lg font-semibold text-white mb-2">{{ i18n.formatMessage('ui.location_details') || '失踪地点详情' }}</h3>
+                <p class="text-slate-400">{{ missingCase.location_details }}</p>
+              </div>
+            @endif
+            
+            @if(missingCase.case_summary)
+              <div>
+                <h3 class="text-lg font-semibold text-white mb-2">{{ i18n.formatMessage('ui.case_summary') || '案件概述' }}</h3>
+                <p class="text-slate-400">{{ missingCase.case_summary }}</p>
+              </div>
+            @endif
           </div>
         </section>
 
@@ -80,5 +223,5 @@
     </div>
   </main>
 
-  <!-- 引用共用底部模板 -->
+  <!-- Include common footer template -->
   @include('_footer')
