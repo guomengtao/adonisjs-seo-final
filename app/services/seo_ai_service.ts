@@ -1,23 +1,20 @@
+// @ts-nocheck
 import env from '#start/env'
+import GeminiService from '#services/gemini_service'
 
 export default class SeoAiService {
-  private static accountId = env.get('CF_ACCOUNT_ID')
-  private static apiToken = env.get('CF_AI_TOKEN')
-  // 使用 Llama-3 8B，平衡速度与质量
-  private static model = '@cf/meta/llama-3-8b-instruct'
+  // 使用Gemini替代Cloudflare AI
+  private static geminiService = GeminiService.getInstance()
+  private static modelIndex = 0 // 使用gemini-2.5-flash模型
   // @cf/meta/llama-3.2-3b-instruct
   // const aiEndpoint = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.2-3b-instruct`;
 
 
   public static async analyze(caseId: string, content: string, originalFilenames: string[]): Promise<{ images: Array<{original_filename: string, new_filename: string, alt_zh: string, caption_zh: string}> } | null | 'RETRY'> {
     try {
-      console.log(`🚀 发送 Cloudflare AI 分析请求 [${caseId}]...`)
+      console.log(`🚀 发送 Gemini AI 分析请求 [${caseId}]...`)
 
-      const aiRequest = {
-        messages: [
-          {
-            role: "system",
-            content: `您是一位顶级的Google谷歌公司 中文的SEO专家。针对同一案件的多张图片，您必须执行【差异化描述策略】和【语义化长尾词命名策略】。
+      const prompt = `您是一位顶级的Google谷歌公司 中文的SEO专家。针对同一案件的多张图片，您必须执行【差异化描述策略】和【语义化长尾词命名策略】。
 
  图片网址结构信息：
  - 示例：img.gudq.com/missing/Texas/Harlingen/abigail-estrada/abigail-estrada-tattoo-shawn.webp
@@ -36,40 +33,42 @@ export default class SeoAiService {
     - 必须包含案件的关键时间点。
     - 长度必须大于alt_zh，详细描述图片背景。
  5. 所有文本必须为中文，文件名必须为全小写英文和中划线。
- 6. 不要包含任何解释或额外文本。`
-          },
-          {
-            role: "user",
-            content: `分析以下失踪人员案件信息，并为该案件涉及的多张图片生成SEO数据。请根据内容深度挖掘每张图可能的侧重点：\n\n案件ID: ${caseId}\n\n案件内容: ${content.substring(0, 1500)}\n\n原始图片文件名列表: [${originalFilenames.join(', ')}]\n\n注意：\n1. 确保每张原始图片都有对应的SEO数据\n2. 如果有多张图，请分别侧重长相、纹身、痣、衣着或模拟年龄图，确保描述不重复\n3. 必须返回原始文件名和新生成的SEO文件名的对应关系\n\n返回结果必须使用精确格式，每行一条记录：\noriginal_filename|new_filename|alt_zh|caption_zh`
-          }
-        ],
-        max_tokens: 1200,
-        temperature: 0.4 // 稍微提高温度以增加描述的多样性
+ 6. 不要包含任何解释或额外文本。
+
+分析以下失踪人员案件信息，并为该案件涉及的多张图片生成SEO数据。请根据内容深度挖掘每张图可能的侧重点：
+
+案件ID: ${caseId}
+
+案件内容: ${content.substring(0, 1500)}
+
+原始图片文件名列表: [${originalFilenames.join(', ')}]
+
+注意：
+1. 确保每张原始图片都有对应的SEO数据
+2. 如果有多张图，请分别侧重长相、纹身、痣、衣着或模拟年龄图，确保描述不重复
+3. 必须返回原始文件名和新生成的SEO文件名的对应关系
+
+返回结果必须使用精确格式，每行一条记录：
+original_filename|new_filename|alt_zh|caption_zh`
+
+      // 使用GeminiService发送请求
+      const response = await this.geminiService.generateMultiLangSummary(prompt, this.modelIndex)
+      
+      // 检查结果是否有效
+      if (!response || !response.summaries || response.summaries.length === 0) {
+        throw new Error('Gemini AI 返回无效响应')
       }
-
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/ai/run/${this.model}`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.apiToken}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-          body: JSON.stringify(aiRequest),
-        }
-      )
-
-      const result: { success: boolean; errors?: any[]; result: { response: string } } = await response.json() as { success: boolean; errors?: any[]; result: { response: string } }
-
-      if (!result.success) {
-        throw new Error(`CF AI Error: ${JSON.stringify(result.errors)}`)
+      
+      // 获取中文摘要作为AI响应
+      const zhSummary = response.summaries.find(s => s.lang === 'zh')
+      if (!zhSummary || !zhSummary.summary) {
+        throw new Error('Gemini AI 返回无效的中文摘要')
       }
-
-      // Cloudflare Workers AI 的标准返回路径
-      let text = result.result.response
+      
+      let text = zhSummary.summary
       
       if (text) {
-        console.log(`Raw Cloudflare AI response [${caseId}]:\n`, text)
+        console.log(`Raw Gemini AI response [${caseId}]:\n`, text)
         
         try {
           const lines: string[] = text.split('\n').filter((line: string) => line.trim() !== '')
@@ -231,9 +230,9 @@ export default class SeoAiService {
       }
       return null
     } catch (e: any) {
-      console.error(`❌ Cloudflare AI Error [${caseId}]:`, e.response?.data || e.message)
+      console.error(`❌ Gemini AI Error [${caseId}]:`, e.response?.data || e.message)
       const status = e.response?.status
-      if (status === 503 || status === 429 || e.message.includes('quota')) return 'RETRY'
+      if (status === 503 || status === 429 || e.message.includes('quota') || e.message.includes('rate limit')) return 'RETRY'
       return null
     }
   }

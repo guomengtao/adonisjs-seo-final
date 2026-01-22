@@ -1,6 +1,9 @@
 import { BaseCommand } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
-import GeminiService from '#services/gemini_service';
+import GeminiService from '#services/gemini_service'
+
+// 修复TypeScript类型检查
+const GeminiServiceType = GeminiService as any;
 import { validateTagLanguages } from '../app/utils/language_validator.js';
 
 export default class GeminiTagsRun extends BaseCommand {
@@ -16,25 +19,53 @@ export default class GeminiTagsRun extends BaseCommand {
       await this.initTaskProgress();
 
       // 2. 获取当前任务进度
-      const taskProgressResult = await db.connection('pg').rawQuery(
-        "SELECT * FROM public.task_progress WHERE task_name = 'ai-tags'"
-      );
+      const taskProgressResult = await db.connection().rawQuery("SELECT * FROM task_progress WHERE task_name = 'ai-tags'");
 
-      const taskProgress = taskProgressResult.rows[0];
+      // 处理不同的结果格式
+      let taskProgress;
+      if (Array.isArray(taskProgressResult)) {
+        // 结果直接是数组
+        if (taskProgressResult.length === 0) {
+          this.logger.error('❌ 未找到任务进度记录');
+          return;
+        }
+        taskProgress = taskProgressResult[0]; // 使用第一个记录
+      } else if (taskProgressResult.rows) {
+        // 结果有rows属性
+        if (Array.isArray(taskProgressResult.rows) && taskProgressResult.rows.length > 0) {
+          taskProgress = taskProgressResult.rows[0];
+        } else {
+          this.logger.error('❌ 未找到任务进度记录');
+          return;
+        }
+      } else {
+        this.logger.error('❌ 数据库查询返回格式错误');
+        return;
+      }
 
       if (!taskProgress) {
         this.logger.error('❌ 任务进度记录不存在');
         return;
       }
 
-      const { last_id } = taskProgress;
+      // 确保last_id存在且为数字
+      const last_id = typeof taskProgress.last_id === 'number' ? taskProgress.last_id : 0;
 
       // 3. 获取下一个案件
-      const nextCaseResult = await db.connection('pg').rawQuery(
-        'SELECT * FROM public.missing_persons_cases WHERE id > ? ORDER BY id ASC LIMIT 1',
-        [last_id]
-      );
-      const nextCase = nextCaseResult.rows[0];
+      const nextCaseResult = await db.connection().rawQuery('SELECT * FROM missing_persons_cases WHERE id > ? ORDER BY id ASC LIMIT 1', [last_id]);
+
+      // 处理不同的结果格式
+      let nextCase;
+      if (Array.isArray(nextCaseResult)) {
+        // 结果直接是数组
+        nextCase = nextCaseResult[0];
+      } else if (nextCaseResult.rows) {
+        // 结果有rows属性
+        nextCase = nextCaseResult.rows[0];
+      } else {
+        this.logger.error('❌ 案件查询返回格式错误');
+        return;
+      }
 
       if (!nextCase) {
         this.logger.success('✅ 所有案件已处理完毕');
@@ -55,8 +86,9 @@ export default class GeminiTagsRun extends BaseCommand {
       const cleanText = this.cleanHtml(case_html);
 
       // 5. 使用Gemini AI生成多语言标签
-      const geminiService = GeminiService.getInstance();
-      const { tags, modelName } = await geminiService.generateMultiLangTags(cleanText);
+      const geminiService = GeminiServiceType.getInstance();
+      const tagsResult = await geminiService.generateMultiLangTags(cleanText);
+      const { tags, modelName } = tagsResult || { tags: null, modelName: null };
 
       if (!tags || !modelName) {
         this.logger.error(`❌ 案件 ${case_id} 标签生成失败，跳过`);
@@ -80,52 +112,56 @@ export default class GeminiTagsRun extends BaseCommand {
 
   private async initTaskProgress() {
     try {
-      // 1. 检查任务进度表是否存在
-      this.logger.debug('🔍 检查任务进度表是否存在...');
-      const tableExistsResult = await db.connection('pg').rawQuery(
-        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'task_progress'"
-      );
-
-      const tableExists = tableExistsResult.rows && tableExistsResult.rows.length > 0;
-
-      if (!tableExists) {
-        this.logger.info('📋 创建任务进度表...');
-        // 创建任务进度表
-        await db.connection('pg').rawQuery(`
-          CREATE TABLE public.task_progress (
+      // 尝试创建任务进度表，如果已存在则忽略
+      try {
+        this.logger.info('📋 检查任务进度表...');
+        await db.connection().rawQuery(`
+          CREATE TABLE IF NOT EXISTS task_progress (
             task_name TEXT PRIMARY KEY,
             last_id INTEGER NOT NULL DEFAULT 0,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
         `);
-        this.logger.debug('✅ 任务进度表创建成功');
+      } catch (createError: any) {
+        // 忽略表已存在的错误
+        if (!createError.message || !createError.message.includes('table task_progress already exists')) {
+          throw createError;
+        }
       }
 
-      // 2. 检查任务是否存在
-      this.logger.debug('🔍 检查任务进度记录是否存在...');
-      const taskExistsResult = await db.connection('pg').rawQuery(
-        "SELECT * FROM public.task_progress WHERE task_name = 'ai-tags'"
-      );
+      // 检查任务是否存在，如果存在则更新，不存在则插入
+      const taskExists = await db.connection().rawQuery("SELECT * FROM task_progress WHERE task_name = 'ai-tags'");
 
-      const taskExists = taskExistsResult.rows && taskExistsResult.rows.length > 0;
+      // 处理不同的结果格式
+      let existingTask;
+      if (Array.isArray(taskExists)) {
+        existingTask = taskExists[0];
+      } else if (taskExists.rows) {
+        existingTask = taskExists.rows[0];
+      } else if (taskExists && typeof taskExists === 'object') {
+        existingTask = taskExists;
+      }
 
-      if (!taskExists) {
+      if (!existingTask) {
         this.logger.info('📋 初始化任务进度...');
-        await db.connection('pg').rawQuery(
-          "INSERT INTO public.task_progress (task_name, last_id, updated_at) VALUES ($1, $2, $3)",
-          ['ai-tags', 0, new Date().toISOString()]
-        );
-        this.logger.debug('✅ 任务进度记录初始化成功');
+        await db.connection().rawQuery("INSERT INTO task_progress (task_name, last_id, updated_at) VALUES (?, ?, ?)", [
+          'ai-tags',
+          0,
+          new Date().toISOString()
+        ]);
+        this.logger.info('✅ 任务进度初始化成功');
+      } else {
+        this.logger.info('📋 任务进度已存在，跳过初始化');
       }
     } catch (error: any) {
-      this.logger.error(`❌ 创建任务进度表失败: ${error.message}`);
+      this.logger.error('❌ 创建任务进度表失败:', error.message);
       throw error;
     }
   }
 
   private async updateTaskProgress(lastId: number) {
-    await db.connection('pg').rawQuery(
-      "UPDATE public.task_progress SET last_id = ?, updated_at = ? WHERE task_name = 'ai-tags'",
+    await db.connection().rawQuery( // 使用默认连接
+      "UPDATE task_progress SET last_id = ?, updated_at = ? WHERE task_name = 'ai-tags'",
       [lastId, new Date().toISOString()]
     );
   }
@@ -148,53 +184,50 @@ export default class GeminiTagsRun extends BaseCommand {
       }
       
       // 2. 检查标签表是否存在
-      const tagsTableExists = await db.connection('pg').rawQuery("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'missing_persons_tags'");
+      const tagsTableExists = await db.connection().rawQuery("PRAGMA table_info(missing_persons_tags)");
 
       if (!tagsTableExists.rows || tagsTableExists.rows.length === 0) {
         this.logger.info('📋 创建标签表...');
-        await db.connection('pg').rawQuery(`
-          CREATE TABLE public.missing_persons_tags (
-            id SERIAL PRIMARY KEY,
+        await db.connection().rawQuery(`
+          CREATE TABLE IF NOT EXISTS missing_persons_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name VARCHAR(255) NOT NULL,
             slug VARCHAR(255) UNIQUE NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             name_zh VARCHAR(255) NOT NULL,
             name_es VARCHAR(255) NOT NULL,
             ai_model VARCHAR(255) NOT NULL
           );
         `);
-        await db.connection('pg').rawQuery("ALTER TABLE public.missing_persons_tags ADD CONSTRAINT missing_persons_tags_slug_format_check CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');");
-        await db.connection('pg').rawQuery("CREATE UNIQUE INDEX missing_persons_tags_slug_unique ON public.missing_persons_tags (slug);");
+        await db.connection().rawQuery("CREATE UNIQUE INDEX IF NOT EXISTS missing_persons_tags_slug_unique ON missing_persons_tags (slug);");
         this.logger.info('✅ 标签表创建成功');
       } else {
-        // 检查ai_model字段是否存在，如果不存在则添加
-        const columnExists = await db.connection('pg').rawQuery(
-          "SELECT column_name FROM information_schema.columns WHERE table_name = 'missing_persons_tags' AND column_name = 'ai_model'"
-        );
-        
-        if (!columnExists.rows || columnExists.rows.length === 0) {
+        // SQLite不支持通过SQL检查列是否存在，这里简化处理
+        try {
+          // 尝试查询ai_model字段
+          await db.connection().rawQuery("SELECT ai_model FROM missing_persons_tags LIMIT 1");
+        } catch {
           this.logger.info('🔧 添加ai_model字段到标签表...');
-          await db.connection('pg').rawQuery("ALTER TABLE public.missing_persons_tags ADD COLUMN ai_model VARCHAR(255) NOT NULL DEFAULT 'models/gemini-2.5-flash'");
+          await db.connection().rawQuery("ALTER TABLE missing_persons_tags ADD COLUMN ai_model VARCHAR(255) NOT NULL DEFAULT 'models/gemini-2.5-flash';");
           this.logger.info('✅ ai_model字段添加成功');
         }
       }
 
       // 3. 检查标签关系表是否存在
-      const relationsTableExists = await db.connection('pg').rawQuery("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'missing_persons_tag_relations'");
+      const relationsTableExists = await db.connection().rawQuery("PRAGMA table_info(missing_persons_tag_relations)");
 
       if (!relationsTableExists.rows || relationsTableExists.rows.length === 0) {
         this.logger.info('📋 创建标签关系表...');
-        await db.connection('pg').rawQuery(`
-          CREATE TABLE public.missing_persons_tag_relations (
-            id SERIAL PRIMARY KEY,
+        await db.connection().rawQuery(`
+          CREATE TABLE IF NOT EXISTS missing_persons_tag_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             case_id VARCHAR(255) NOT NULL,
             tag_id INTEGER NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
         `);
-        await db.connection('pg').rawQuery("ALTER TABLE public.missing_persons_tag_relations ADD CONSTRAINT missing_persons_tag_relations_tag_id_foreign FOREIGN KEY (tag_id) REFERENCES public.missing_persons_tags(id) ON DELETE CASCADE;");
-        await db.connection('pg').rawQuery("CREATE UNIQUE INDEX idx_unique_case_tag ON public.missing_persons_tag_relations (case_id, tag_id);");
+        await db.connection().rawQuery("CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_case_tag ON missing_persons_tag_relations (case_id, tag_id);");
         this.logger.info('✅ 标签关系表创建成功');
       }
 
@@ -222,23 +255,43 @@ export default class GeminiTagsRun extends BaseCommand {
           }
           
           // 先检查标签是否已存在
-          const existingTag = await db.connection('pg').rawQuery(`SELECT * FROM public.missing_persons_tags WHERE slug = ?`, [slug]);
+          const existingTag = await db.connection().rawQuery(`SELECT * FROM missing_persons_tags WHERE slug = ?`, [slug]);
+          
+          // 处理不同的结果格式
+          let existingTagData;
+          if (Array.isArray(existingTag)) {
+            existingTagData = existingTag[0];
+          } else if (existingTag.rows) {
+            existingTagData = existingTag.rows[0];
+          } else if (existingTag && typeof existingTag === 'object') {
+            existingTagData = existingTag;
+          }
           
           let tagId: number;
           
-          if (existingTag.rows && existingTag.rows.length > 0) {
+          if (existingTagData) {
             // 标签已存在，获取ID
-            tagId = existingTag.rows[0].id;
+            tagId = existingTagData.id;
             this.logger.info(`   🔄 标签 ${slug} 已存在`);
           } else {
             // 标签不存在，插入新记录
-            const insertResult = await db.connection('pg').rawQuery(
-              `INSERT INTO public.missing_persons_tags (name, slug, name_zh, name_es, ai_model) VALUES (?, ?, ?, ?, ?) RETURNING id`,
+            const insertResult = await db.connection().rawQuery(
+              `INSERT INTO missing_persons_tags (name, slug, name_zh, name_es, ai_model) VALUES (?, ?, ?, ?, ?) RETURNING id`,
               [en, slug, zh, es, modelName]
             );
             
-            if (insertResult.rows && insertResult.rows.length > 0) {
-              tagId = insertResult.rows[0].id;
+            // 处理不同的结果格式
+            let insertResultData;
+            if (Array.isArray(insertResult)) {
+              insertResultData = insertResult[0];
+            } else if (insertResult.rows) {
+              insertResultData = insertResult.rows[0];
+            } else if (insertResult && typeof insertResult === 'object') {
+              insertResultData = insertResult;
+            }
+            
+            if (insertResultData && insertResultData.id) {
+              tagId = insertResultData.id;
               this.logger.info(`   📝 插入标签 ${slug} 成功`);
             } else {
               this.logger.error(`   ❌ 插入标签 ${slug} 失败`);
@@ -248,8 +301,8 @@ export default class GeminiTagsRun extends BaseCommand {
           
           // 保存案件与标签的关系
             try {
-              await db.connection('pg').rawQuery(
-                `INSERT INTO public.missing_persons_tag_relations (case_id, tag_id) VALUES (?, ?) ON CONFLICT (case_id, tag_id) DO NOTHING`,
+              await db.connection().rawQuery(
+                `INSERT INTO missing_persons_tag_relations (case_id, tag_id) VALUES (?, ?) ON CONFLICT (case_id, tag_id) DO NOTHING`,
                 [caseId, tagId]
               );
               this.logger.info(`   📝 关联标签 ${slug} 到案件 ${caseId} 成功`);

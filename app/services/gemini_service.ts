@@ -1,7 +1,7 @@
 import axios from 'axios';
 import env from '#start/env';
 
-export default class GeminiService {
+class GeminiService {
   private static instance: GeminiService;
   private apiKey: string;
   private baseUrl: string = 'https://chatgpt-proxy.gudq.com';
@@ -71,7 +71,7 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
 西语摘要需地道（使用 "Visto por última vez", "Se solicita colaboración" 等）。
 语言风格需庄重、客观，禁止使用感叹号。`;
 
-      // 使用代理发送请求
+      // 使用代理发送请求，添加30秒超时
       const response = await axios.post(`${this.baseUrl}/v1beta/models/${modelName.replace('models/', '')}:generateContent`, {
         contents: [
           {
@@ -81,17 +81,75 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
           }
         ]
       }, {
-        params: { key: this.apiKey }
+        params: { key: this.apiKey },
+        timeout: 30000, // 30秒超时
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       const text = response.data.candidates[0].content.parts[0].text;
 
       // 清理AI输出，确保是纯JSON
-      const cleanText = text.replace(/^```json|```$/g, '').trim();
-      const summaries = JSON.parse(cleanText);
+      let cleanText = text.replace(/^```json|```$/g, '').trim();
+      
+      // 尝试更彻底地清理，移除可能的多余文本
+      cleanText = cleanText.replace(/^[^\[]+([\[\{])/, '$1'); // 移除JSON前的所有文本
+      cleanText = cleanText.replace(/([\]\}])[^\]]+$/, '$1'); // 移除JSON后的所有文本
+      cleanText = cleanText.replace(/\/\*[\s\S]*?\*\//g, ''); // 移除多行注释
+      cleanText = cleanText.replace(/\/\/.*$/gm, ''); // 移除单行注释
+      
+      // 解析JSON，并处理可能的错误
+      let summaries;
+      try {
+        summaries = JSON.parse(cleanText);
+      } catch (parseError) {
+        console.error('❌ JSON解析失败，原始输出:', text);
+        console.error('❌ 清理后的输出:', cleanText);
+        
+        // 尝试修复常见的JSON语法错误
+        let fixedText = cleanText;
+        
+        console.log('🔧 开始修复JSON...');
+        
+        // 修复行尾缺少逗号的问题（如："lang":"es"\n"summary":"..."）
+        fixedText = fixedText.replace(/"\s*:\s*[^,\n}]+\s*\n\s*"/g, (match) => {
+          // 查找值的结束位置
+          const valueEndIndex = match.lastIndexOf('\n');
+          if (valueEndIndex > 0) {
+            // 在换行前添加逗号
+            return match.substring(0, valueEndIndex) + ',\n"';
+          }
+          return match;
+        });
+        
+        console.log('🔧 修复后的JSON（行尾逗号）:', fixedText);
+        
+        // 修复缺少逗号的问题（如："key":"value""key2":"value2"）
+        fixedText = fixedText.replace(/"\s*}\s*\s*{\s*"/g, '"}, {"');
+        fixedText = fixedText.replace(/"\s*}\s*\s*\[\s*"/g, '"}, ["');
+        
+        // 修复缺少逗号的键值对之间的问题（如："key":"value""key2":"value2"）
+        fixedText = fixedText.replace(/("\s*:\s*"[^"\\]*\")\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*[0-9]+)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*true)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*false)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
+        
+        console.log('🔧 修复后的JSON（最终）:', fixedText);
+        
+        // 尝试重新解析修复后的JSON
+        try {
+          summaries = JSON.parse(fixedText);
+          console.log('✅ JSON自动修复成功！');
+        } catch (fixedParseError) {
+          console.error('❌ JSON修复后仍然解析失败，修复后的输出:', fixedText);
+          throw new Error(`JSON解析失败: ${parseError.message}`);
+        }
+      }
 
       // 验证输出格式
       if (!Array.isArray(summaries) || summaries.length !== 3) {
+        console.error('❌ 摘要格式验证失败，解析结果:', summaries);
         throw new Error('AI返回的摘要格式不正确');
       }
 
@@ -154,7 +212,7 @@ URL 安全 (Slug)：为英文标签生成一个 slug 。规则：仅限小写字
 案件描述内容：
 ${details}`;
 
-      // 使用代理发送请求
+      // 使用代理发送请求，添加30秒超时
       const response = await axios.post(`${this.baseUrl}/v1beta/models/${modelName.replace('models/', '')}:generateContent`, {
         contents: [
           {
@@ -164,7 +222,11 @@ ${details}`;
           }
         ]
       }, {
-        params: { key: this.apiKey }
+        params: { key: this.apiKey },
+        timeout: 30000, // 30秒超时
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       const text = response.data.candidates[0].content.parts[0].text;
@@ -203,3 +265,5 @@ ${details}`;
     }
   }
 }
+
+export default GeminiService;

@@ -3,8 +3,8 @@ import { defineConfig } from '@adonisjs/lucid'
 import env from '#start/env' // 确保导入了 env 
 
 const dbConfig = defineConfig({
-  // 关键点 1: 将默认连接改为 pg，这样 multiInsert 就会往 Neon 写
-  connection: 'pg', 
+  // 关键点 1: 将默认连接改为 turso
+  connection: 'turso', 
 
   connections: {
     // 你的本地 SQLite
@@ -20,7 +20,7 @@ const dbConfig = defineConfig({
       },
     },
 
-    // 关键点 2: 必须添加 pg (Neon) 的配置
+    // 关键点 2: pg (Neon) 的配置
     pg: {
       client: 'pg',
       connection: {
@@ -34,6 +34,21 @@ const dbConfig = defineConfig({
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
+      },
+    },
+
+    // 关键点 3: 添加 turso 的配置
+    turso: {
+      client: 'libsql',
+      connection: {
+        // 使用正确的 LibSQL 连接格式 - 将认证令牌包含在URL中
+        filename: `${env.get('TURSO_URL')}?authToken=${env.get('TURSO_TOKEN')}` as string,
+      },
+      useNullAsDefault: true,
+      migrations: {
+        naturalSort: true,
+        paths: ['database/migrations'],
+        disableTransactions: true,
       },
     },
   },

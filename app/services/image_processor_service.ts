@@ -15,7 +15,11 @@ export default class ImageProcessorService {
     let caseImageCount = 0
 
     // 严格清理字符串的函数
-    const strictClean = (str: string, isUrl: boolean = false): string => {
+    const strictClean = (str: string | undefined | null, isUrl: boolean = false): string => {
+      // 首先检查字符串是否为undefined或null
+      if (!str) {
+        return ''
+      }
       // 首先移除所有ASCII码小于32的不可见字符（这是主要问题）
       str = str.replace(/[\x00-\x1F]/g, '')
       
@@ -76,7 +80,9 @@ export default class ImageProcessorService {
         const metadata = await sharp(webpBuffer).metadata()
 
         // B. 即时上传 B2
-        await B2Service.upload(webpBuffer, key)
+        const b2UploadResult = await B2Service.upload(webpBuffer, key)
+        console.log(`   📦 B2上传完成: ${key} (${Math.round(webpBuffer.length / 1024)}KB)`)
+        console.log(`   ✅ B2上传成功: ${typeof b2UploadResult === 'string' ? b2UploadResult : '上传完成'}`)
 
         // C. 写入资产明细表 (用于 SEO)
         await db.table('missing_persons_assets').insert({

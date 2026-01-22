@@ -29,7 +29,7 @@ export default class CheckTagsRun extends BaseCommand {
       this.logger.info('🔍 查询数据库中的标签存储情况...');
 
       // 查询最近添加的标签
-      const tagsResult = await db.connection('pg').rawQuery(
+      const tagsResult = await db.connection().rawQuery( // 使用默认连接
         'SELECT * FROM public.missing_persons_tags ORDER BY created_at DESC LIMIT 10'
       );
 
@@ -55,7 +55,7 @@ export default class CheckTagsRun extends BaseCommand {
       });
 
       // 查询标签关系
-      const relationsResult = await db.connection('pg').rawQuery(
+      const relationsResult = await db.connection().rawQuery( // 使用默认连接
         `SELECT mtr.case_id, mtr.tag_id, mpt.slug
          FROM public.missing_persons_tag_relations mtr
          JOIN public.missing_persons_tags mpt ON mtr.tag_id = mpt.id

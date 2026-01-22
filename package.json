@@ -40,6 +40,7 @@
     "@japa/assert": "^4.0.1",
     "@japa/plugin-adonisjs": "^4.0.0",
     "@japa/runner": "^4.2.0",
+    "@neondatabase/serverless": "^1.0.2",
     "@swc/core": "1.11.24",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.15.18",
@@ -49,7 +50,7 @@
     "prettier": "^3.5.3",
     "ts-node-maintained": "^10.9.5",
     "typescript": "~5.8",
-    "wrangler": "^4.59.1"
+    "wrangler": "^4.59.3"
   },
   "dependencies": {
     "@adonisjs/auth": "^9.4.0",
@@ -60,15 +61,20 @@
     "@aws-sdk/client-s3": "^3.968.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/hub": "^2.7.1",
+    "@libsql/client": "^0.17.0",
+    "@libsql/sqlite3": "^0.3.1",
     "@rlanz/bull-queue": "^3.1.0",
     "@vinejs/vine": "^3.0.1",
     "axios": "^1.13.2",
     "better-sqlite3": "^12.6.0",
+    "drizzle-orm": "^0.45.1",
     "edge.js": "^6.4.0",
     "luxon": "^3.7.2",
     "pg": "^8.17.1",
     "reflect-metadata": "^0.2.2",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "hotHook": {
     "boundaries": [

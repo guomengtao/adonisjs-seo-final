@@ -6,40 +6,106 @@ export default class AiSeoRun extends BaseCommand {
   static commandName = 'ai:seo'
   static options = { startApp: true }
 
-
-
   async run() {
     this.logger.info('🚀 启动 SEO 自动化流水线...')
 
-    const pendingCases = await db.from('missing_persons_assets')
-      .where('ai_processed', 0)
-      .distinct('case_id')
+    // 使用原始SQL查询，避免ORM格式问题，添加超时保护
+    this.logger.debug('🔍 正在查询待处理案件...')
+    
+    let pendingCasesResult: any
+    try {
+      // 添加20秒超时保护
+      pendingCasesResult = await Promise.race([
+        db.rawQuery('SELECT DISTINCT case_id FROM missing_persons_assets WHERE ai_processed = 0 LIMIT 10'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('数据库查询超时')), 20000))
+      ])
+    } catch (e: any) {
+      this.logger.error(`⏱️ 数据库查询超时或失败: ${e.message}`)
+      return
+    }
+    
+    // 处理Turso/libSQL格式的结果
+    let pendingCases = []
+    if (Array.isArray(pendingCasesResult)) {
+      pendingCases = pendingCasesResult
+      this.logger.debug(`📋 直接获取结果数组，包含 ${pendingCases.length} 个案件`)
+    } else if (pendingCasesResult.rows) {
+      pendingCases = pendingCasesResult.rows
+      this.logger.debug(`📋 从 rows 属性获取结果，包含 ${pendingCases.length} 个案件`)
+    } else {
+      this.logger.debug(`📋 查询结果格式未知: ${JSON.stringify(pendingCasesResult)}`)
+    }
 
-    if (pendingCases.length === 0) return this.logger.success('✅ 处理完毕')
+    this.logger.info(`📊 查询到 ${pendingCases.length} 个待处理案件`)
+    
+    if (pendingCases.length === 0) {
+      this.logger.success('✅ 处理完毕')
+      return
+    }
 
     // 只处理第一条待处理案件
+    this.logger.debug(`📋 待处理案件列表: ${pendingCases.map((p: any) => p.case_id).join(', ')}`)
     const { case_id } = pendingCases[0]
     // 立即将任务状态改为100，避免死循环
-    await this.updateStatus(case_id, 100)
+    this.logger.debug(`🔄 更新任务状态为处理中: ${case_id}`)
+    const updateStatusResult = await db.rawQuery('UPDATE missing_persons_assets SET ai_processed = 100 WHERE case_id = ? AND ai_processed = 0', [case_id])
+    this.logger.debug(`📊 更新状态结果: ${JSON.stringify(updateStatusResult)}`)
     this.logger.info(`--------------------------------------------------`)
     this.logger.info(`🤖 处理案件: ${case_id}`)
     
-    const record = await db.from('missing_persons_cases').where('case_id', case_id).first()
-    if (!record || !record.case_html) {
+    // 使用原始SQL查询案件信息
+    this.logger.debug(`🔍 查询案件详细信息: ${case_id}`)
+    const recordResult = await db.rawQuery('SELECT * FROM missing_persons_cases WHERE case_id = ?', [case_id])
+    
+    // 处理Turso/libSQL格式的结果
+    let records = []
+    if (Array.isArray(recordResult)) {
+      records = recordResult
+      this.logger.debug(`📋 案件信息查询结果: ${JSON.stringify(records)}`)
+    } else if (recordResult.rows) {
+      records = recordResult.rows
+      this.logger.debug(`📋 案件信息查询结果: ${JSON.stringify(records)}`)
+    } else {
+      this.logger.debug(`📋 案件信息查询结果格式未知: ${JSON.stringify(recordResult)}`)
+      this.logger.error(`❌ 无法获取案件信息: ${case_id}`)
       await this.updateStatus(case_id, 404)
       return
     }
     
+    const record = records[0]
+    if (!record) {
+      this.logger.error(`❌ 未找到案件: ${case_id}`)
+      await this.updateStatus(case_id, 404)
+      return
+    }
+    if (!record.case_html) {
+      this.logger.error(`❌ 案件缺少HTML内容: ${case_id}`)
+      await this.updateStatus(case_id, 404)
+      return
+    }
+    this.logger.debug(`✅ 成功获取案件信息: ${case_id}, HTML长度: ${record.case_html.length}`)
+    
     // 显示处理的表ID
     this.logger.info(`📋 案件表ID: ${record.id || 'N/A'}`)
     
-    // 获取该案件下所有未处理的图片原始文件名
-    const assets = await db.from('missing_persons_assets')
-      .where('case_id', case_id)
-      .where('ai_processed', 0)
-      .select('original_filename', 'new_filename')
+    // 使用原始SQL查询资产信息
+    this.logger.debug(`🔍 查询案件资产信息: ${case_id}`)
+    const assetsResult = await db.rawQuery('SELECT original_filename, new_filename FROM missing_persons_assets WHERE case_id = ? AND ai_processed = 0', [case_id])
     
-    let originalFilenames = assets.map(asset => asset.original_filename)
+    // 处理Turso/libSQL格式的结果
+    let assets = []
+    if (Array.isArray(assetsResult)) {
+      assets = assetsResult
+      this.logger.debug(`📋 资产信息查询结果: ${JSON.stringify(assets)}`)
+    } else if (assetsResult.rows) {
+      assets = assetsResult.rows
+      this.logger.debug(`📋 资产信息查询结果: ${JSON.stringify(assets)}`)
+    } else {
+      this.logger.debug(`📋 资产信息查询结果格式未知: ${JSON.stringify(assetsResult)}`)
+      assets = []
+    }
+    
+    let originalFilenames = assets.map((asset: any) => asset.original_filename)
     this.logger.info(`📷 找到 ${originalFilenames.length} 张待处理图片`)    
     
     // 如果没有找到待处理图片，检查 HTML 中的图片
@@ -77,19 +143,12 @@ export default class AiSeoRun extends BaseCommand {
           const key = `cases/${case_id}/${fileName}`
           
           try {
-            await db.table('missing_persons_assets').insert({
-              case_id: case_id,
-              is_primary: i === 0 ? 1 : 0,
-              sort_order: i + 1,
-              asset_type: 'photo',
-              original_filename: originalFilename,
-              new_filename: fileName,
-              storage_path: key,
-              width: 0,
-              height: 0,
-              file_size: 0,
-              ai_processed: 0
-            })
+            // 使用原始SQL插入记录
+            await db.rawQuery(`
+              INSERT INTO missing_persons_assets 
+              (case_id, is_primary, sort_order, asset_type, original_filename, new_filename, storage_path, width, height, file_size, ai_processed)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [case_id, i === 0 ? 1 : 0, i + 1, 'photo', originalFilename, fileName, key, 0, 0, 0, 0])
             this.logger.info(`      ✅ 创建记录: ${originalFilename} -> ${fileName}`)
           } catch (error) {
             this.logger.error(`      ❌ 创建记录失败 [${originalFilename}]: ${error.message}`)
@@ -109,11 +168,29 @@ export default class AiSeoRun extends BaseCommand {
     let cleaned = record.case_html.replace(/<img[^>]+src=["'][^"']+\/([^"']+\.webp)["'][^>]*>/gi, '\n[IMAGE: $1]\n')
     cleaned = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 
-    let result = await SeoAiService.analyze(case_id, cleaned, originalFilenames)
+    // 调用AI分析服务，添加超时保护
+    this.logger.debug(`🤖 调用SeoAiService.analyze()进行AI分析: ${case_id}`)
+    this.logger.debug(`📊 分析参数 - 原始文件名数量: ${originalFilenames.length}, 内容长度: ${cleaned.length}`)
+    
+    // 添加50秒超时保护，防止AI分析无限期卡住
+    let result: any
+    try {
+      result = await Promise.race([
+        SeoAiService.analyze(case_id, cleaned, originalFilenames),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI分析超时')), 50000))
+      ])
+    } catch (e: any) {
+      this.logger.error(`⏱️ AI分析超时或失败: ${e.message}`)
+      await this.updateStatus(case_id, 504) // 使用504表示网关超时
+      return
+    }
+    
     let retryCount = 0
     const maxRetries = 3 // 最多重试3次
     
     // 显示AI返回的信息
+    // 显示AI返回的信息
+    this.logger.debug(`📊 AI分析结果类型: ${typeof result}, 值: ${JSON.stringify(result)}`)
     if (result && result !== 'RETRY') {
       this.logger.info('🤖 AI返回信息:')
       this.logger.info(JSON.stringify(result, null, 2))
@@ -124,16 +201,20 @@ export default class AiSeoRun extends BaseCommand {
         retryCount++
         this.logger.info(`⏳ 模型预热中... (重试 ${retryCount}/${maxRetries})`)
         await new Promise(r => setTimeout(r, 20000)) // 20秒后重试
+        this.logger.debug(`🔄 重试AI分析: ${case_id}`)
         result = await SeoAiService.analyze(case_id, cleaned, originalFilenames)
+        this.logger.debug(`📊 重试分析结果: ${JSON.stringify(result)}`)
       }
     }
 
     if (result && typeof result === 'object' && Array.isArray(result.images)) {
+      this.logger.info(`✅ AI分析成功，返回 ${result.images.length} 张图片的SEO数据`)
       try {
         let processedImages = 0
         let skippedImages = 0
         const processedDetails: string[] = []
         
+        this.logger.debug(`🔄 开始数据库事务处理SEO数据`)
         await db.transaction(async (trx) => {
           for (const img of result.images) {
             // 验证必填字段是否存在
@@ -161,11 +242,20 @@ export default class AiSeoRun extends BaseCommand {
             this.logger.info(`   写入内容: alt_zh=${img.alt_zh}, caption_zh=${img.caption_zh}, ai_processed=200`)
             
             // 根据 original_filename 查找记录，获取id和原alt_zh值
-            const existingRecord = await trx.from('missing_persons_assets')
-              .where('case_id', case_id)
-              .where('original_filename', img.original_filename)
-              .select('id', 'alt_zh')
-              .first()
+            const existingRecordResult = await trx.rawQuery(
+              'SELECT id, alt_zh FROM missing_persons_assets WHERE case_id = ? AND original_filename = ?',
+              [case_id, img.original_filename]
+            )
+            
+            // 处理Turso/libSQL格式的结果
+            let existingRecords = []
+            if (Array.isArray(existingRecordResult)) {
+              existingRecords = existingRecordResult
+            } else if (existingRecordResult.rows) {
+              existingRecords = existingRecordResult.rows
+            }
+            
+            const existingRecord = existingRecords[0]
             
             // 显示修改前后的对比
             if (existingRecord) {
@@ -175,15 +265,10 @@ export default class AiSeoRun extends BaseCommand {
             }
             
             // 更新数据
-            const updateResult = await trx.from('missing_persons_assets')
-              .where('case_id', case_id)
-              .where('original_filename', img.original_filename)
-              .update({
-                new_filename: img.new_filename,
-                alt_zh: img.alt_zh,
-                caption_zh: img.caption_zh,
-                ai_processed: 200
-              })
+            const updateResult = await trx.rawQuery(
+              'UPDATE missing_persons_assets SET new_filename = ?, alt_zh = ?, caption_zh = ?, ai_processed = 200 WHERE case_id = ? AND original_filename = ?',
+              [img.new_filename, img.alt_zh, img.caption_zh, case_id, img.original_filename]
+            )
             
             // 确保正确处理受影响的行数
             const affectedRows = typeof updateResult === 'number' ? updateResult : updateResult[0]
@@ -196,24 +281,14 @@ export default class AiSeoRun extends BaseCommand {
                 // 创建新的资产记录
                 const key = `cases/${case_id}/${img.new_filename}`
                 
-                // 插入新记录并获取自动生成的id
-                const insertResult = await trx.table('missing_persons_assets').insert({
-                  case_id: case_id,
-                  is_primary: 0,
-                  sort_order: 99,
-                  asset_type: 'photo',
-                  original_filename: img.original_filename,
-                  new_filename: img.new_filename,
-                  storage_path: key,
-                  width: 0,
-                  height: 0,
-                  file_size: 0,
-                  alt_zh: img.alt_zh,
-                  caption_zh: img.caption_zh,
-                  ai_processed: 200
-                })
+                // 插入新记录
+                await trx.rawQuery(`
+                  INSERT INTO missing_persons_assets 
+                  (case_id, is_primary, sort_order, asset_type, original_filename, new_filename, storage_path, width, height, file_size, alt_zh, caption_zh, ai_processed)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [case_id, 0, 99, 'photo', img.original_filename, img.new_filename, key, 0, 0, 0, img.alt_zh, img.caption_zh, 200])
                 
-                const insertedId = insertResult[0] || '未知' // 获取插入的id
+                const insertedId = '未知' // Turso/libSQL可能不支持返回插入ID
                 processedImages++
                 processedDetails.push(`   - ${img.new_filename}: 插入成功 (ID: ${insertedId})`)
               } catch (insertError) {
@@ -232,15 +307,24 @@ export default class AiSeoRun extends BaseCommand {
         }
         this.logger.info(`   ├─ 成功处理：${processedImages} 张图片`)
         this.logger.info(`   └─ 跳过：${skippedImages} 张图片`)
+        this.logger.debug(`📊 最终处理统计 - 成功: ${processedImages}, 跳过: ${skippedImages}`)
         
         // 查询并打印数据库中保存的最终结果
         this.logger.info(`📊 数据库中保存的记录：`)
-        const savedAssets = await db.from('missing_persons_assets')
-          .where('case_id', case_id)
-          .where('ai_processed', 200)
-          .select('id', 'original_filename', 'new_filename', 'alt_zh', 'caption_zh')
+        const savedAssetsResult = await db.rawQuery(
+          'SELECT id, original_filename, new_filename, alt_zh, caption_zh FROM missing_persons_assets WHERE case_id = ? AND ai_processed = 200',
+          [case_id]
+        )
         
-        savedAssets.forEach((asset, index) => {
+        // 处理Turso/libSQL格式的结果
+        let savedAssets = []
+        if (Array.isArray(savedAssetsResult)) {
+          savedAssets = savedAssetsResult
+        } else if (savedAssetsResult.rows) {
+          savedAssets = savedAssetsResult.rows
+        }
+        
+        savedAssets.forEach((asset: any, index: number) => {
           this.logger.info(`   图片 ${index + 1}:`)
           this.logger.info(`   ├─ 记录ID：${asset.id || '未知'}`)
           this.logger.info(`   ├─ 原始文件名：${asset.original_filename}`)
@@ -264,7 +348,7 @@ export default class AiSeoRun extends BaseCommand {
     await new Promise(r => setTimeout(r, 1000)) // 添加适当的延迟避免API限流
   }
 
-  async updateStatus(caseId: string, code: number) {
-    await db.from('missing_persons_assets').where('case_id', caseId).update({ ai_processed: code })
+  private async updateStatus(caseId: string, code: number) {
+    await db.rawQuery('UPDATE missing_persons_assets SET ai_processed = ? WHERE case_id = ?', [code, caseId])
   }
 }

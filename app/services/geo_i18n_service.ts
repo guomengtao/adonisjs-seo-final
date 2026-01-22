@@ -1,5 +1,5 @@
 import db from '@adonisjs/lucid/services/db'
-import GeoTranslation from '#models/geo_translation'
+// GeoTranslation 模型导入已移除，因为该服务直接使用 DB 查询
 
 interface GeoTranslationResult {
   originalName: string

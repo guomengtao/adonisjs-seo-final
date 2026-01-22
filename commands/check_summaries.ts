@@ -11,7 +11,7 @@ export default class CheckSummaries extends BaseCommand {
 
     try {
       // 查询摘要表中的所有数据
-      const result = await db.connection('pg').rawQuery(`SELECT * FROM case_summaries ORDER BY case_id, lang`)
+      const result = await db.connection().rawQuery(`SELECT * FROM case_summaries ORDER BY case_id, lang`); // 使用默认连接
 
       if (!result.rows || result.rows.length === 0) {
         this.logger.info('📊 案件摘要表中没有数据')

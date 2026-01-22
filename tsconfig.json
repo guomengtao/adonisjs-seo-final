@@ -2,6 +2,13 @@
   "extends": "@adonisjs/tsconfig/tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "./build"
-  }
+    "outDir": "./build",
+    "baseUrl": "./",
+    "paths": {
+      "@adonisjs/core/ace": ["node_modules/@adonisjs/core/build/modules/ace/main"],
+      "@adonisjs/lucid/services/db": ["node_modules/@adonisjs/lucid/build/services/db"],
+      "#services/*": ["app/services/*"]
+    }
+  },
+  "exclude": ["drizzle.config.ts"]
 }

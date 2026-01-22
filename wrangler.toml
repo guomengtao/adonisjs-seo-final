@@ -1,0 +1,26 @@
+name = "missing-persons-db"
+type = "pages"
+
+account_id = "197ff91e7b8164532e5a54f708eb14a0"
+workers_dev = true
+
+# D1数据库配置
+d1_databases = [
+  { binding = "D1_DATABASE", database_name = "missing-persons-db", database_id = "cb1a3b98-010a-4eb4-8433-78bd0a6dd630" }
+]
+
+[env.development]
+kv_namespaces = []
+
+[env.production]
+kv_namespaces = []
+
+[build]
+command = "npm run build"
+dist = "./build"
+upload = { format = "pages" }
+
+# 环境变量配置
+[vars]
+DATABASE_URL = "postgres://neondb_owner:npg_sHDY6QCZUl1V@ep-billowing-truth-af8menab-pooler.c-2.us-west-2.aws.neon.tech/db_missing_neon?sslmode=require"
+CF_ACCOUNT_ID = "197ff91e7b8164532e5a54f708eb14a0"

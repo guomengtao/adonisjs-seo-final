@@ -1,8 +1,8 @@
 import { BaseCommand } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
-import GeminiService from '#services/gemini_service';
 import axios from 'axios';
-import env from '#start/env';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export default class AiToZhRun extends BaseCommand {
   static commandName = 'ai:to-zh';
@@ -17,7 +17,7 @@ export default class AiToZhRun extends BaseCommand {
       await this.initTaskProgress();
 
       // 2. 获取当前任务进度
-      const taskProgressResult = await db.connection('pg').rawQuery(
+      const taskProgressResult = await db.connection().rawQuery( // 使用默认连接
         "SELECT * FROM public.task_progress WHERE task_name = 'ai-to-zh'"
       );
 
@@ -31,7 +31,7 @@ export default class AiToZhRun extends BaseCommand {
       const { last_id } = taskProgress;
 
       // 3. 获取下一个案件
-      const nextCaseResult = await db.connection('pg').rawQuery(
+      const nextCaseResult = await db.connection().rawQuery( // 使用默认连接
         'SELECT * FROM public.missing_persons_info WHERE id > ? ORDER BY id ASC LIMIT 1',
         [last_id]
       );
@@ -56,7 +56,6 @@ export default class AiToZhRun extends BaseCommand {
       };
 
       // 5. 调用AI进行翻译
-      const geminiService = GeminiService.getInstance();
       const translationResult = await this.translateWithAI(fieldsToTranslate, 0);
 
       if (!translationResult) {
@@ -92,7 +91,7 @@ export default class AiToZhRun extends BaseCommand {
     try {
       // 1. 检查任务进度表是否存在
       this.logger.debug('🔍 检查任务进度表是否存在...');
-      const tableExistsResult = await db.connection('pg').rawQuery(
+      const tableExistsResult = await db.connection().rawQuery( // 使用默认连接
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'task_progress'"
       );
 
@@ -101,7 +100,7 @@ export default class AiToZhRun extends BaseCommand {
       if (!tableExists) {
         this.logger.info('📋 创建任务进度表...');
         // 创建任务进度表
-        await db.connection('pg').rawQuery(`
+        await db.connection().rawQuery(` // 使用默认连接
           CREATE TABLE public.task_progress (
             task_name TEXT PRIMARY KEY,
             last_id INTEGER NOT NULL DEFAULT 0,
@@ -113,7 +112,7 @@ export default class AiToZhRun extends BaseCommand {
 
       // 2. 检查任务是否存在
       this.logger.debug('🔍 检查任务进度记录是否存在...');
-      const taskExistsResult = await db.connection('pg').rawQuery(
+      const taskExistsResult = await db.connection().rawQuery( // 使用默认连接
         "SELECT * FROM public.task_progress WHERE task_name = 'ai-to-zh'"
       );
 
@@ -121,7 +120,7 @@ export default class AiToZhRun extends BaseCommand {
 
       if (!taskExists) {
         this.logger.info('📋 初始化任务进度...');
-        await db.connection('pg').rawQuery(
+        await db.connection().rawQuery( // 使用默认连接
           "INSERT INTO public.task_progress (task_name, last_id, updated_at) VALUES (?, ?, ?)",
           ['ai-to-zh', 0, new Date().toISOString()]
         );
@@ -130,7 +129,7 @@ export default class AiToZhRun extends BaseCommand {
 
       // 3. 检查翻译结果表是否存在
       this.logger.debug('🔍 检查翻译结果表是否存在...');
-      const resultTableExistsResult = await db.connection('pg').rawQuery(
+      const resultTableExistsResult = await db.connection().rawQuery( // 使用默认连接
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'cases_info_zh'"
       );
 
@@ -138,7 +137,7 @@ export default class AiToZhRun extends BaseCommand {
 
       if (!resultTableExists) {
         this.logger.info('📋 创建翻译结果表 cases_info_zh...');
-        await db.connection('pg').rawQuery(`
+        await db.connection().rawQuery(` // 使用默认连接
           CREATE TABLE public.cases_info_zh (
             id SERIAL PRIMARY KEY,
             case_id VARCHAR(255) NOT NULL,
@@ -153,17 +152,17 @@ export default class AiToZhRun extends BaseCommand {
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           );
         `);
-        await db.connection('pg').rawQuery("CREATE INDEX idx_cases_info_zh_case_id ON public.cases_info_zh (case_id);");
+        await db.connection().rawQuery("CREATE INDEX idx_cases_info_zh_case_id ON public.cases_info_zh (case_id);"); // 使用默认连接
         this.logger.debug('✅ 翻译结果表创建成功');
       } else {
         // 检查是否存在ai_model字段，如果不存在则添加
-        const columnExistsResult = await db.connection('pg').rawQuery(
+        const columnExistsResult = await db.connection().rawQuery( // 使用默认连接
           "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'cases_info_zh' AND column_name = 'ai_model'"
         );
         
         if (!columnExistsResult.rows || columnExistsResult.rows.length === 0) {
           this.logger.info('📋 为翻译结果表添加ai_model字段...');
-          await db.connection('pg').rawQuery(
+          await db.connection().rawQuery( // 使用默认连接
             "ALTER TABLE public.cases_info_zh ADD COLUMN ai_model VARCHAR(100) NULL"
           );
           this.logger.debug('✅ ai_model字段添加成功');
@@ -176,7 +175,7 @@ export default class AiToZhRun extends BaseCommand {
   }
 
   private async updateTaskProgress(lastId: number) {
-    await db.connection('pg').rawQuery(
+    await db.connection().rawQuery( // 使用默认连接
       "UPDATE public.task_progress SET last_id = ?, updated_at = ? WHERE task_name = ?",
       [lastId, new Date().toISOString(), 'ai-to-zh']
     );
@@ -211,7 +210,7 @@ ${JSON.stringify(fields, null, 2)}`;
         'models/gemini-robotics-er-1.5-preview'
       ];
       
-      const apiKey = env.get('GEMINI_API_KEY') || '';
+      const apiKey = process.env.GEMINI_API_KEY || '';
       const baseUrl = 'https://chatgpt-proxy.gudq.com';
       const modelName = availableModels[modelIndex] || availableModels[0];
       
@@ -287,14 +286,14 @@ ${JSON.stringify(fields, null, 2)}`;
   private async saveTranslationResult(caseId: string, caseInfoId: number, translatedFields: any, modelName: string) {
     try {
       // 检查记录是否已存在
-      const existingRecordResult = await db.connection('pg').rawQuery(
+      const existingRecordResult = await db.connection().rawQuery( // 使用默认连接
         'SELECT * FROM public.cases_info_zh WHERE case_info_id = ?',
         [caseInfoId]
       );
       
       if (existingRecordResult.rows && existingRecordResult.rows.length > 0) {
         // 更新现有记录
-        await db.connection('pg').rawQuery(
+        await db.connection().rawQuery( // 使用默认连接
           `UPDATE public.cases_info_zh 
            SET full_name_zh = ?, race_zh = ?, classification_zh = ?, 
                distinguishing_marks_zh = ?, disappearance_details_zh = ?, 
@@ -314,7 +313,7 @@ ${JSON.stringify(fields, null, 2)}`;
         this.logger.info(`   🔄 更新翻译记录成功 (使用模型: ${modelName})`);
       } else {
         // 插入新记录
-        await db.connection('pg').rawQuery(
+        await db.connection().rawQuery( // 使用默认连接
           `INSERT INTO public.cases_info_zh 
            (case_id, case_info_id, full_name_zh, race_zh, classification_zh, 
             distinguishing_marks_zh, disappearance_details_zh, ai_model, created_at, updated_at) 

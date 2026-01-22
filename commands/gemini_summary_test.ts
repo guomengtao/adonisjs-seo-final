@@ -1,6 +1,9 @@
 import { BaseCommand, args } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
-import GeminiService from '#services/gemini_service';
+import GeminiService from '#services/gemini_service'
+
+// 修复TypeScript类型检查
+const GeminiServiceType = GeminiService as any;
 
 export default class GeminiSummaryTest extends BaseCommand {
   static commandName = 'gemini:summary-test';
@@ -40,10 +43,11 @@ export default class GeminiSummaryTest extends BaseCommand {
       this.logger.info(`📝 清理后的文本长度: ${cleanText.length} 字符`);
 
       // 使用Gemini AI生成多语言摘要
-      const geminiService = GeminiService.getInstance();
+      const geminiService = GeminiServiceType.getInstance();
       this.logger.info('🔤 正在生成多语言摘要...');
       
-      const { summaries, modelName } = await geminiService.generateMultiLangSummary(cleanText);
+      const summaryResult = await geminiService.generateMultiLangSummary(cleanText);
+      const { summaries, modelName } = summaryResult || { summaries: null, modelName: null };
 
       if (!summaries || !modelName) {
         this.logger.error(`❌ 摘要生成失败`);

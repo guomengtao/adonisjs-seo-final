@@ -22,12 +22,12 @@ export default class CheckSummariesCount extends BaseCommand {
       this.logger.info('🔍 查询Neon数据库中case_summaries表的记录...');
 
       // 查询记录总数
-      const countResult = await db.connection('pg').rawQuery('SELECT COUNT(*) as total FROM case_summaries');
+      const countResult = await db.connection().rawQuery('SELECT COUNT(*) as total FROM case_summaries'); // 使用默认连接
       const totalCount = countResult.rows[0].total;
       this.logger.info(`📊 记录总数: ${totalCount}`);
 
       // 查询所有记录，按case_id和lang排序
-      const allResults = await db.connection('pg').rawQuery('SELECT * FROM case_summaries ORDER BY case_id, lang');
+      const allResults = await db.connection().rawQuery('SELECT * FROM case_summaries ORDER BY case_id, lang'); // 使用默认连接
 
       if (allResults.rows && allResults.rows.length > 0) {
         this.logger.info('\n📋 完整记录列表:');
