@@ -113,7 +113,7 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
         console.log('🔧 开始修复JSON...');
         
         // 修复行尾缺少逗号的问题（如："lang":"es"\n"summary":"..."）
-        fixedText = fixedText.replace(/"\s*:\s*[^,\n}]+\s*\n\s*"/g, (match) => {
+        fixedText = fixedText.replace(/"\s*:\s*[^,\n}]+\s*\n\s*"/g, (match: string) => {
           // 查找值的结束位置
           const valueEndIndex = match.lastIndexOf('\n');
           if (valueEndIndex > 0) {
