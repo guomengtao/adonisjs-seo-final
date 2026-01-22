@@ -25,3 +25,17 @@ yarn-error.log
 .DS_Store
 
 /tmp/*.sql
+
+# 忽略所有 sqlite 数据库和备份
+*.db
+*.sql
+*.py
+*.sqlite
+*.sqlite3
+backup_*
+*.bak
+*.dump
+# 忽略 Neon/Turso 可能导出的临时文件
+temp-*database.db
+*.sqlite
+temp-*
