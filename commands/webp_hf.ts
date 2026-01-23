@@ -1,7 +1,7 @@
 import { BaseCommand } from '@adonisjs/core/ace'
 import db from '@adonisjs/lucid/services/db'
 import HfService, { HfFile } from '#services/hf_service'
-import axios from 'axios'
+import B2Service from '#services/b2_service'
 
 export default class WebpHfUpload extends BaseCommand {
   static commandName = 'webp:hf'
@@ -40,7 +40,7 @@ export default class WebpHfUpload extends BaseCommand {
           .where('hf_backup_status', 0) // 0表示未备份
           .limit(batchSize)
           .offset(currentPage * batchSize)
-          .select('id', 'b2_url', 'hf_path')
+          .select('id', 'storage_path', 'hf_path')
 
         if (images.length === 0) break
 
@@ -51,20 +51,16 @@ export default class WebpHfUpload extends BaseCommand {
         
         for (const image of images) {
           try {
-            this.logger.info(`🔍 正在准备: ${image.hf_path}`)
+            // 使用 storage_path 作为 hf_path，如果 hf_path 为空
+            const hfPath = image.hf_path || image.storage_path
+            this.logger.info(`🔍 正在准备: ${image.storage_path}`)
             
             // 从B2下载图片
-            const response = await axios.get(image.b2_url, {
-              responseType: 'arraybuffer',
-              timeout: 30000 // 30秒超时
-            })
-            
-            // 转换为Buffer
-            const buffer = Buffer.from(response.data)
+            const buffer = await B2Service.download(image.storage_path)
             
             // 添加到HF上传队列
             hfQueue.push({
-              path: image.hf_path,
+              path: hfPath,
               content: new Blob([buffer])
             })
             

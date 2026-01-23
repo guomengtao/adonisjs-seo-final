@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import env from '#start/env'
 
 class B2Service {
@@ -33,6 +33,27 @@ class B2Service {
     // 返回链接：endpoint/bucket/key
     const rawEndpoint = env.get('B2_ENDPOINT')
     return `${rawEndpoint}/${bucketName}/${key}`
+  }
+
+  async download(key: string): Promise<Buffer> {
+    const bucketName = env.get('B2_BUCKET_NAME')
+
+    const response = await this.client.send(new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    }))
+
+    // 将 response.Body 转换为 Buffer
+    if (!response.Body) {
+      throw new Error(`No content returned for key: ${key}`)
+    }
+
+    const chunks: Buffer[] = []
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk)
+    }
+
+    return Buffer.concat(chunks)
   }
 }
 
