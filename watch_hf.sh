@@ -13,12 +13,12 @@ run_summary() {
 
 # 处理 GEO 任务的函数
 run_webp() {
-    # while true; do
+    while true; do
         echo "[WEBP] --- 开始新一轮处理 ---"
         node ace webp:run 50
         echo "[WEBP] --- 处理完成，休息 662 秒 ---"
-        # sleep 30
-    # done
+        sleep 500
+    done
 }
 
 
