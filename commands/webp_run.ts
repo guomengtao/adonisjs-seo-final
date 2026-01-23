@@ -2,29 +2,40 @@ import { BaseCommand } from '@adonisjs/core/ace'
 import db from '@adonisjs/lucid/services/db'
 import ImageProcessorService from '#services/image_processor_service'
 import HfService, { HfFile } from '#services/hf_service'
+import { args } from '@adonisjs/core/ace'
 
 export default class ProcessImages extends BaseCommand {
   static commandName = 'webp:run'
-  static description = '全自动流水线：B2 同步 + HF 批量备份（每3个案件打包上传）'
+  static description = '全自动流水线：B2 同步 + HF 批量备份'
   static options = { startApp: true }
 
+  // 使用装饰器定义参数
+  @args.string({
+    description: '每批次处理的案件数量，默认3个',
+    required: false
+  })
+  batchSize!: string // 添加明确赋值断言
+
   async run() {
+    // 获取参数或使用默认值
+    const batchSize = parseInt(this.batchSize || '3') || 3
+    
     this.logger.info('🚀 启动图片处理流水线...')
-    this.logger.info('💡 每次处理3个案件，B2即时上传，HF积累3个案件后批量上传')
+    this.logger.info(`💡 每次处理${batchSize}个案件，B2即时上传，HF积累${batchSize}个案件后批量上传`)
     
     const processor = new ImageProcessorService()
     
     // HF批量上传队列和计数器
     const hfBatchQueue: HfFile[] = []
     let hfCaseCounter = 0
-    const HF_BATCH_SIZE = 50 // 每3个案件批量上传一次
+    const HF_BATCH_SIZE = batchSize // 使用参数值或默认值
 
     try {
       // 1. 获取进度统计
       const stats = await this.getStats()
       this.logger.info(`📊 总进度: ${stats.percent}% | 待处理: ${stats.remaining} 个案件`)
 
-      // 2. 获取待处理案件 (关联 info 表获取 url_path) - 每次处理3个案件以满足HF批量上传条件
+      // 2. 获取待处理案件 (关联 info 表获取 url_path) - 每次处理指定数量的案件
       const records = await db
         .from('missing_persons_cases')
         .join('missing_persons_info', 'missing_persons_cases.case_id', 'missing_persons_info.case_id')
@@ -36,7 +47,7 @@ export default class ProcessImages extends BaseCommand {
         )
         .where('missing_persons_cases.image_webp_status', 0)
         .whereNotNull('missing_persons_info.url_path')
-        .limit(3) // 每次处理3个案件以满足HF批量上传条件
+        .limit(batchSize) // 使用参数值或默认值
 
       if (records.length === 0) {
         this.logger.success('✅ 所有任务已完成！')

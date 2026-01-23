@@ -104,13 +104,8 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
       try {
         summaries = JSON.parse(cleanText);
       } catch (parseError) {
-        console.error('❌ JSON解析失败，原始输出:', text);
-        console.error('❌ 清理后的输出:', cleanText);
-        
         // 尝试修复常见的JSON语法错误
         let fixedText = cleanText;
-        
-        console.log('🔧 开始修复JSON...');
         
         // 修复行尾缺少逗号的问题（如："lang":"es"\n"summary":"..."）
         fixedText = fixedText.replace(/"\s*:\s*[^,\n}]+\s*\n\s*"/g, (match: string) => {
@@ -123,33 +118,26 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
           return match;
         });
         
-        console.log('🔧 修复后的JSON（行尾逗号）:', fixedText);
-        
         // 修复缺少逗号的问题（如："key":"value""key2":"value2"）
-        fixedText = fixedText.replace(/"\s*}\s*\s*{\s*"/g, '"}, {"');
+        fixedText = fixedText.replace(/"\s*}\s*\s*\{\s*"/g, '"}, {"');
         fixedText = fixedText.replace(/"\s*}\s*\s*\[\s*"/g, '"}, ["');
         
         // 修复缺少逗号的键值对之间的问题（如："key":"value""key2":"value2"）
-        fixedText = fixedText.replace(/("\s*:\s*"[^"\\]*\")\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
-        fixedText = fixedText.replace(/("\s*:\s*[0-9]+)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
-        fixedText = fixedText.replace(/("\s*:\s*true)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
-        fixedText = fixedText.replace(/("\s*:\s*false)\s*("\s*:\s*"[^"\\]*\")/g, '$1, $2');
-        
-        console.log('🔧 修复后的JSON（最终）:', fixedText);
+        fixedText = fixedText.replace(/("\s*:\s*"[^"\\]*")\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*[0-9]+)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*true)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*false)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
         
         // 尝试重新解析修复后的JSON
         try {
           summaries = JSON.parse(fixedText);
-          console.log('✅ JSON自动修复成功！');
         } catch (fixedParseError) {
-          console.error('❌ JSON修复后仍然解析失败，修复后的输出:', fixedText);
           throw new Error(`JSON解析失败: ${parseError.message}`);
         }
       }
 
       // 验证输出格式
       if (!Array.isArray(summaries) || summaries.length !== 3) {
-        console.error('❌ 摘要格式验证失败，解析结果:', summaries);
         throw new Error('AI返回的摘要格式不正确');
       }
 
