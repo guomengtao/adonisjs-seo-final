@@ -17,7 +17,7 @@ run_webp() {
         echo "[WEBP] --- 开始新一轮处理 ---"
         node ace webp:run 6
         echo "[WEBP] --- 处理完成，休息 662 秒 ---"
-        sleep 662
+        sleep 30
     done
 }
 
@@ -32,9 +32,9 @@ run_tag() {
     done
 }
 # 同时在后台启动两个任务
-run_summary &
+# run_summary &
 run_webp &
-run_tag &
+# run_tag &
 
 # 保持主进程不退出，否则容器会关闭
 wait
