@@ -1,16 +1,14 @@
 import { Ignitor, prettyPrintError } from '@adonisjs/core'
-import { InferScope } from '@adonisjs/core/types/app'
-import { ApplicationService } from '@adonisjs/core/types'
-import app from '@adonisjs/core/services/app'
 import Case from './app/models/case.js'
 
 // 创建应用实例
 const ignitor = new Ignitor(__dirname)
 
 async function testTursoConnection() {
+  let app: any
   try {
     // 引导应用
-    const app = await ignitor.httpServer().boot()
+    app = await ignitor.httpServer().boot()
     
     console.log('✅ 应用引导成功')
     console.log('🔍 开始测试 TURSO 数据库连接...')
@@ -59,7 +57,7 @@ async function testTursoConnection() {
     
     console.log('\n🎉 所有测试通过！TURSO 数据库连接和查询正常工作。')
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 测试失败:', error)
     prettyPrintError(error)
   } finally {

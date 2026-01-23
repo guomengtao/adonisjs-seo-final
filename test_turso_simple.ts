@@ -119,9 +119,9 @@ async function testTursoQuery() {
     
     for (const table of tablesToCheck) {
       try {
-        const tableCheck = await client.execute(`SELECT COUNT(*) as count FROM ${table} LIMIT 1`);
+        await client.execute(`SELECT COUNT(*) as count FROM ${table} LIMIT 1`);
         console.log(`✅ 表 ${table} 存在`);
-      } catch (error) {
+      } catch (error: any) {
         console.log(`❌ 表 ${table} 不存在或查询失败: ${error.message}`);
       }
     }

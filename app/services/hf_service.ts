@@ -11,7 +11,7 @@ export default class HfService {
   private static token = env.get('HF_TOKEN')
 
    public static async batchUpload(files: HfFile[], commitMessage: string) {
-    if (files.length === 0) return
+    if (files.length === 0) return true
 
     try {
       await commit({
@@ -29,8 +29,7 @@ export default class HfService {
       return true
     } catch (error) {
       console.error('❌ HF 批量上传失败详情:', error)
-      // 这里的 throw 建议暂时注释掉，防止 HF 报错打断你 B2 的后续上传
-      // throw error 
+      return false
     }
   }
 }

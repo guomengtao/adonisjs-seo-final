@@ -78,7 +78,8 @@ export default class AiToZhRun extends BaseCommand {
       };
 
       // 5. 调用AI进行翻译
-      this.logger.info(`📊 原文长度: ${JSON.stringify(Object.entries(fieldsToTranslate).reduce((acc, [key, value]) => ({ ...acc, [key]: value?.length || 0 }), {}))}`);
+      const fieldsLength = JSON.stringify(Object.entries(fieldsToTranslate).reduce((acc, [key, value]) => ({ ...acc, [key]: value?.length || 0 }), {}));
+      this.logger.info(`📊 原文长度: ${fieldsLength}`);
       const translationResult = await this.translateWithAI(fieldsToTranslate, 0);
 
       if (!translationResult) {
