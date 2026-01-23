@@ -1,0 +1,197 @@
+数据库表结构信息
+============================================================
+
+adonis_schema
+-------------
+id INTEGER (NULL)
+batch INTEGER (NULL)
+migration_time TEXT (NULL)
+name TEXT (NULL)
+
+adonis_schema_versions
+----------------------
+version INTEGER (NULL)
+
+case_html_analysis
+------------------
+id INTEGER (NULL)
+case_info_id INTEGER (NULL)
+strong_count INTEGER (NULL)
+has_details_heading INTEGER (NULL)
+extracted_at TEXT (NULL)
+case_id TEXT (NULL)
+
+case_summaries
+--------------
+id INTEGER (NULL)
+created_at TEXT (NULL)
+updated_at TEXT (NULL)
+ai_model TEXT (NULL)
+summary TEXT (NULL)
+case_id TEXT (NULL)
+lang TEXT (NULL)
+
+cases_info_zh
+-------------
+case_info_id INTEGER (NULL)
+created_at TEXT (NULL)
+updated_at TEXT (NULL)
+id INTEGER (NULL)
+classification_zh TEXT (NULL)
+distinguishing_marks_zh TEXT (NULL)
+disappearance_details_zh TEXT (NULL)
+ai_model TEXT (NULL)
+case_id TEXT (NULL)
+full_name_zh TEXT (NULL)
+race_zh TEXT (NULL)
+
+geo_translations
+----------------
+geoname_id INTEGER (NULL)
+cases_count INTEGER (NULL)
+id INTEGER (NULL)
+es_name TEXT (NULL)
+geo_type TEXT (NULL)
+parent_state_code TEXT (NULL)
+fips_code TEXT (NULL)
+slug TEXT (NULL)
+en_name TEXT (NULL)
+zh_name TEXT (NULL)
+
+missing_persons_assets
+----------------------
+updated_at TEXT (NULL)
+is_primary INTEGER (NULL)
+sort_order INTEGER (NULL)
+width INTEGER (NULL)
+height INTEGER (NULL)
+file_size INTEGER (NULL)
+ai_processed INTEGER (NULL)
+created_at TEXT (NULL)
+id INTEGER (NULL)
+caption_zh TEXT (NULL)
+caption_es TEXT (NULL)
+alt_en TEXT (NULL)
+case_id TEXT (NULL)
+alt_zh TEXT (NULL)
+alt_es TEXT (NULL)
+asset_type TEXT (NULL)
+original_filename TEXT (NULL)
+new_filename TEXT (NULL)
+storage_path TEXT (NULL)
+caption_en TEXT (NULL)
+hf_backup_status INTEGER (NULL)
+hf_path TEXT (NULL)
+
+missing_persons_cases
+---------------------
+created_at TEXT (NULL)
+updated_at TEXT (NULL)
+image_webp_status INTEGER (NULL)
+image_count INTEGER (NULL)
+html_status INTEGER (NULL)
+info_status INTEGER (NULL)
+id INTEGER (NULL)
+process_code TEXT (NULL)
+case_title TEXT (NULL)
+case_id TEXT (NULL)
+analysis_result TEXT (NULL)
+scraped_content TEXT (NULL)
+case_url TEXT (NULL)
+case_html TEXT (NULL)
+
+missing_persons_info
+--------------------
+updated_at TEXT (NULL)
+disappearance_details_word_count INTEGER (NULL)
+created_at TEXT (NULL)
+official_update_count INTEGER (NULL)
+city_geo_id INTEGER (NULL)
+official_last_updated TEXT (NULL)
+id INTEGER (NULL)
+height TEXT (NULL)
+investigating_agency TEXT (NULL)
+disappearance_details TEXT (NULL)
+missing_since TEXT (NULL)
+race TEXT (NULL)
+sex TEXT (NULL)
+source_info TEXT (NULL)
+weight TEXT (NULL)
+official_update_history TEXT (NULL)
+status TEXT (NULL)
+state_ref TEXT (NULL)
+county_fips_ref TEXT (NULL)
+classification TEXT (NULL)
+state_zh TEXT (NULL)
+county_zh TEXT (NULL)
+city_zh TEXT (NULL)
+state_slug TEXT (NULL)
+county_slug TEXT (NULL)
+city_slug TEXT (NULL)
+path TEXT (NULL)
+case_id TEXT (NULL)
+url_path TEXT (NULL)
+age_at_missing TEXT (NULL)
+date_of_birth TEXT (NULL)
+distinguishing_marks TEXT (NULL)
+full_name TEXT (NULL)
+
+missing_persons_tag_relations
+-----------------------------
+id INTEGER (NULL)
+tag_id INTEGER (NULL)
+created_at TEXT (NULL)
+case_id TEXT (NULL)
+
+missing_persons_tags
+--------------------
+cases_count INTEGER (NULL)
+created_at TEXT (NULL)
+updated_at TEXT (NULL)
+id INTEGER (NULL)
+ai_model TEXT (NULL)
+name_zh TEXT (NULL)
+name TEXT (NULL)
+slug TEXT (NULL)
+name_es TEXT (NULL)
+
+task_instances
+--------------
+id INTEGER (NULL)
+case_id INTEGER (NOT NULL)
+task_type TEXT (NOT NULL)
+status INTEGER (NULL)
+retry_count INTEGER (NULL)
+error_log TEXT (NULL)
+payload JSON (NULL)
+scheduled_at DATETIME (NULL)
+last_run DATETIME (NULL)
+created_at DATETIME (NULL)
+updated_at DATETIME (NULL)
+
+task_progress
+-------------
+last_id INTEGER (NULL)
+updated_at TEXT (NULL)
+task_name TEXT (NOT NULL)
+
+us_geo_mapping
+--------------
+id INTEGER (NULL)
+lat TEXT (NULL)
+lng TEXT (NULL)
+population INTEGER (NULL)
+density TEXT (NULL)
+military INTEGER (NULL)
+incorporated INTEGER (NULL)
+ranking INTEGER (NULL)
+zips TEXT (NULL)
+timezone TEXT (NULL)
+city_ascii TEXT (NULL)
+state_id TEXT (NULL)
+state_name TEXT (NULL)
+county_fips TEXT (NULL)
+county_name TEXT (NULL)
+source TEXT (NULL)
+city TEXT (NULL)
+

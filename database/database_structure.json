@@ -1,0 +1,1166 @@
+{
+  "adonis_schema": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "batch": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "migration_time": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "adonis_schema_versions": {
+    "columns": {
+      "version": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "case_html_analysis": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_info_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "strong_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "has_details_heading": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "extracted_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "case_summaries": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "ai_model": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "summary": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "lang": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "cases_info_zh": {
+    "columns": {
+      "case_info_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "classification_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "distinguishing_marks_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "disappearance_details_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "ai_model": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "full_name_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "race_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [
+      {
+        "name": "idx_cases_info_zh_case_id",
+        "columns": "case_id",
+        "is_unique": 0,
+        "type": "-"
+      }
+    ]
+  },
+  "geo_translations": {
+    "columns": {
+      "geoname_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "cases_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "es_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "geo_type": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "parent_state_code": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "fips_code": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "slug": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "en_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "zh_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "missing_persons_assets": {
+    "columns": {
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "is_primary": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "sort_order": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "width": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "height": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "file_size": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "ai_processed": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "caption_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "caption_es": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "alt_en": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "alt_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "alt_es": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "asset_type": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "original_filename": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "new_filename": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "storage_path": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "caption_en": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "hf_backup_status": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "0"
+      },
+      "hf_path": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "missing_persons_cases": {
+    "columns": {
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "image_webp_status": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "image_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "html_status": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "info_status": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "process_code": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_title": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "analysis_result": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "scraped_content": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_url": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_html": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "missing_persons_info": {
+    "columns": {
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "disappearance_details_word_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "official_update_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "city_geo_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "official_last_updated": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "height": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "investigating_agency": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "disappearance_details": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "missing_since": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "race": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "sex": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "source_info": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "weight": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "official_update_history": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "status": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "state_ref": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "county_fips_ref": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "classification": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "state_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "county_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "city_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "state_slug": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "county_slug": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "city_slug": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "path": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "url_path": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "age_at_missing": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "date_of_birth": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "distinguishing_marks": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "full_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "missing_persons_tag_relations": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "tag_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [
+      {
+        "name": "idx_unique_case_tag",
+        "columns": "case_id, tag_id",
+        "is_unique": 1,
+        "type": "-"
+      }
+    ]
+  },
+  "missing_persons_tags": {
+    "columns": {
+      "cases_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "ai_model": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "name_zh": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "slug": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "name_es": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [
+      {
+        "name": "missing_persons_tags_slug_unique",
+        "columns": "slug",
+        "is_unique": 1,
+        "type": "-"
+      }
+    ]
+  },
+  "task_instances": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "case_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": false,
+        "default_value": ""
+      },
+      "task_type": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": false,
+        "default_value": ""
+      },
+      "status": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "0"
+      },
+      "retry_count": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "0"
+      },
+      "error_log": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "payload": {
+        "data_type": "JSON",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "scheduled_at": {
+        "data_type": "DATETIME",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "CURRENT_TIMESTAMP"
+      },
+      "last_run": {
+        "data_type": "DATETIME",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "created_at": {
+        "data_type": "DATETIME",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "data_type": "DATETIME",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": "CURRENT_TIMESTAMP"
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FOREIGN KEY",
+        "column": "case_id",
+        "referenced_table": "missing_persons_cases",
+        "referenced_column": "case_id",
+        "match_option": "-",
+        "update_rule": "NO ACTION",
+        "delete_rule": "CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_task_updated",
+        "columns": "updated_at",
+        "is_unique": 0,
+        "type": "-"
+      },
+      {
+        "name": "idx_task_case",
+        "columns": "case_id",
+        "is_unique": 0,
+        "type": "-"
+      },
+      {
+        "name": "idx_task_lookup",
+        "columns": "task_type, status",
+        "is_unique": 0,
+        "type": "-"
+      }
+    ]
+  },
+  "task_progress": {
+    "columns": {
+      "last_id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "updated_at": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "task_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": false,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "task_name"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  },
+  "us_geo_mapping": {
+    "columns": {
+      "id": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "lat": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "lng": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "population": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "density": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "military": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "incorporated": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "ranking": {
+        "data_type": "INTEGER",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "zips": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "timezone": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "city_ascii": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "state_id": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "state_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "county_fips": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "county_name": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "source": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      },
+      "city": {
+        "data_type": "TEXT",
+        "max_length": null,
+        "is_nullable": true,
+        "default_value": ""
+      }
+    },
+    "constraints": [
+      {
+        "name": "PRIMARY KEY",
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": []
+  }
+}

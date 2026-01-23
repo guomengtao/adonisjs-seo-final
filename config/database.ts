@@ -3,7 +3,7 @@ import { defineConfig } from '@adonisjs/lucid'
 import env from '#start/env' // 确保导入了 env 
 
 const dbConfig = defineConfig({
-  // 关键点 1: 将默认连接改为 turso
+  // 将默认连接改回 turso
   connection: 'turso', 
 
   connections: {
@@ -43,12 +43,24 @@ const dbConfig = defineConfig({
       connection: {
         // 使用正确的 LibSQL 连接格式 - 将认证令牌包含在URL中
         filename: `${env.get('TURSO_URL')}?authToken=${env.get('TURSO_TOKEN')}` as string,
+        // 添加超时设置
+        connect_timeout: 10,
+        read_timeout: 10,
+        write_timeout: 10,
       },
       useNullAsDefault: true,
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
         disableTransactions: true,
+      },
+      pool: {
+        min: 1,
+        max: 5,
+        acquireTimeoutMillis: 30000,
+        createTimeoutMillis: 30000,
+        destroyTimeoutMillis: 30000,
+        idleTimeoutMillis: 60000,
       },
     },
   },
