@@ -17,7 +17,7 @@ export default class ProcessImages extends BaseCommand {
     // HF批量上传队列和计数器
     const hfBatchQueue: HfFile[] = []
     let hfCaseCounter = 0
-    const HF_BATCH_SIZE = 3 // 每3个案件批量上传一次
+    const HF_BATCH_SIZE = 50 // 每3个案件批量上传一次
 
     try {
       // 1. 获取进度统计
