@@ -15,7 +15,7 @@ run_summary() {
 run_webp() {
     # while true; do
         echo "[WEBP] --- 开始新一轮处理 ---"
-        node ace webp:cf
+        node ace webp:hf
         echo "[WEBP] --- 处理完成，休息 662 秒 ---"
         # sleep 30
     # done
