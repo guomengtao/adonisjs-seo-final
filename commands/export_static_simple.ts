@@ -215,25 +215,5 @@ export default class ExportStaticSimple extends BaseCommand {
     }
   }
   
-  // 统计生成的HTML文件数量
-  private async countGeneratedFiles(directory: string): Promise<number> {
-    let count = 0
-    
-    async function traverse(dir: string) {
-      const entries = await fs.readdir(dir, { withFileTypes: true })
-      
-      for (const entry of entries) {
-        const fullPath = join(dir, entry.name)
-        
-        if (entry.isDirectory()) {
-          await traverse(fullPath)
-        } else if (entry.isFile() && entry.name.endsWith('.html')) {
-          count++
-        }
-      }
-    }
-    
-    await traverse(directory)
-    return count
-  }
+
 }

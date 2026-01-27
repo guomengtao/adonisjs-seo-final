@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import os from 'node:os'
 import { Edge } from 'edge.js'
 import app from '@adonisjs/core/services/app'
-import { readFileSync } from 'node:fs'
 
 // 定义一个简化版的ExportStaticEnglishClear命令类，用于生成静态文件
 export default class ExportStaticEnglishClear extends BaseCommand {

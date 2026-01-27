@@ -221,14 +221,11 @@ export default class AiToZhRun extends BaseCommand {
     // 检查结果是否为空
     if (!result) return false;
     
-    // 检查是否至少有一个字段被翻译
-    let hasTranslation = false;
-    
     // 检查每个字段
     for (const key in originalFields) {
       if (result[key] && result[key] !== originalFields[key]) {
-        hasTranslation = true;
-        break;
+        // 至少有一个字段被翻译，验证通过
+        return true;
       }
     }
     

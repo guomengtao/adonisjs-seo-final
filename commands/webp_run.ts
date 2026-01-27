@@ -65,7 +65,7 @@ export default class ProcessImages extends BaseCommand {
           const rawMatches = html.match(jpgRegex) || []
           
           // 去重并补全 URL
-          let urls = [...new Set(rawMatches)].map(url => {
+          let urls = ([...new Set(rawMatches)] as string[]).map(url => {
             if (url.startsWith('http')) return url
             // 改进 2: 补全相对路径 (charleyproject.org/wp-content/...)
             return `${BASE_URL}/${url.startsWith('/') ? url.slice(1) : url}`

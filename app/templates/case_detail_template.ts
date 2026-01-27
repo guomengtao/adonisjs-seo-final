@@ -145,7 +145,7 @@ export const generateCaseDetailHtml = (data: CaseDetailTemplateData): string => 
                     if (basicInfoMatch) {
                         let basicInfo = basicInfoMatch.join('');
                         // 将基本信息中的标签（如Sex、Race、Age、Missing Since）加粗并设为红色
-                        basicInfo = basicInfo.replace(/<span class="stat-label">(.*?)<\/span>/g, (match: string, label: string) => {
+                        basicInfo = basicInfo.replace(/<span class="stat-label">(.*?)<\/span>/g, (_match: string, label: string) => {
                             // 检查标签是否包含需要高亮的关键词
                             const keywords: string[] = ['Sex', 'Race', 'Age', 'Missing Since', 'Missing From', 'Date of Birth', 'Height', 'Weight'];
                             let highlightedLabel: string = label;

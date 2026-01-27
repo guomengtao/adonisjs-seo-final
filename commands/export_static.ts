@@ -557,7 +557,7 @@ export default class ExportStatic extends BaseCommand {
       
       // 启动http-server
       const { exec } = await import('child_process')
-      const serverProcess = exec(command, (error, stdout, stderr) => {
+      const serverProcess = exec(command, (error, _stdout, stderr) => {
         if (error) {
           this.logger.error(`❌ 服务器启动失败: ${error.message}`)
           return
