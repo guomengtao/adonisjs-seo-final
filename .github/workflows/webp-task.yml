@@ -30,7 +30,7 @@ jobs:
 
         run: |
               node ace webp:run
-              curl -I https://huggingface.co/spaces/mengtaoguo/missing-persons-space
+              curl -I https://mengtaoguo-missing-persons-space.hf.space
         env:
           NODE_ENV: production
           LOG_LEVEL: info

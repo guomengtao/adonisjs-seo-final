@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Ping HF Space
         run: |
-          curl -I https://huggingface.co/spaces/mengtaoguo/missing-persons-space
+          curl -I https://mengtaoguo-missing-persons-space.hf.space
