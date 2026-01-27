@@ -27,6 +27,7 @@ run_tag() {
     while true; do
         echo "[TAG] --- 开始新一轮处理 ---"
         node ace gemini:tags 
+        node ace ai:to-zh
         echo "[TAG] --- 处理完成，休息 20 秒 ---"
         sleep 20
     done
