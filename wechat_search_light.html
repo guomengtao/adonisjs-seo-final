@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搜索失踪人员</title>
+    <style>
+        body{margin:0;padding:15px;background:#f5f5f5;font-family:-apple-system,sans-serif;color:#333;}
+        .search-box{position:relative;margin-bottom:15px;}
+        .search-input{width:100%;padding:12px 40px 12px 12px;border:1px solid #ddd;border-radius:20px;font-size:16px;background:#fff;outline:none;}
+        .search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#999;}
+        .result-item{background:#fff;margin-bottom:8px;padding:12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);}
+        .result-name{font-size:16px;font-weight:600;margin-bottom:4px;}
+        .result-id{font-size:14px;color:#666;}
+        .no-results,.initial-state{text-align:center;padding:40px 20px;color:#999;}
+        .loading{text-align:center;padding:20px;color:#666;}
+    </style>
+</head>
+<body>
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="搜索姓名或案件编号...">
+        <div class="search-icon">🔍</div>
+    </div>
+    
+    <div id="searchResults">
+        <div class="initial-state">输入关键词开始搜索</div>
+    </div>
+
+    <script>
+        // 搜索数据
+        var data=[];
+        
+        // 加载真实数据
+        function loadData(){
+            fetch('http://127.0.0.1:8080/dist/search_local.txt')
+                .then(function(r){return r.text();})
+                .then(function(t){
+                    data=t.split('\n')
+                        .filter(function(l){return l.trim();})
+                        .map(function(l){
+                            var p=l.split('|');
+                            return{n:p[0],c:p[1],p:p[2]};
+                        });
+                    document.getElementById('searchResults').innerHTML='<div class="initial-state">输入关键词开始搜索</div>';
+                })
+                .catch(function(e){
+                    console.error('加载数据失败:',e);
+                    document.getElementById('searchResults').innerHTML='<div class="no-results">数据加载失败</div>';
+                });
+        }
+        
+        function search(q){
+            var r=document.getElementById('searchResults');
+            if(!q.trim()){r.innerHTML='<div class="initial-state">输入关键词开始搜索</div>';return;}
+            r.innerHTML='<div class="loading">搜索中...</div>';
+            setTimeout(function(){
+                var l=q.toLowerCase(),f=data.filter(function(i){
+                    return i.n.toLowerCase().includes(l)||i.c.toLowerCase().includes(l);
+                });
+                showResults(f);
+            },200);
+        }
+        
+        function showResults(r){
+            var c=document.getElementById('searchResults');
+            if(r.length===0){c.innerHTML='<div class="no-results">未找到匹配结果</div>';return;}
+            var h='';
+            for(var i=0;i<r.length;i++){
+                var it=r[i];
+                h+='<div class="result-item" onclick="goto(\''+it.p+'\')"><div class="result-name">'+it.n+'</div><div class="result-id">案件:'+it.c+'</div></div>';
+            }
+            c.innerHTML=h;
+        }
+        
+        function goto(p){alert('跳转到:'+p);}
+        
+        document.addEventListener('DOMContentLoaded',function(){
+            loadData();
+            var s=document.getElementById('searchInput');
+            s.addEventListener('input',function(){search(this.value);});
+            s.addEventListener('keypress',function(e){if(e.key==='Enter')search(this.value);});
+            s.focus();
+        });
+    </script>
+</body>
+</html>

@@ -84,6 +84,9 @@ export default class ExportStatic extends BaseCommand {
     const stateGroups: Record<string, Set<string>> = {} // { 'california': Set(['san-mateo/san-mateo', ...]) }
     const cityGroups: Record<string, any[]> = {}       // { 'california/san-mateo/san-mateo': [案件列表] }
     const generatedUrls: string[] = []                 // 存储生成的所有URL
+    
+    // 为指定语言生成的站点根目录
+    const SITE_ROOT = join(BASE_SITE_ROOT, currentLanguage)
 
     // 获取当前进度或初始化
     let progressId = 0
@@ -252,7 +255,6 @@ export default class ExportStatic extends BaseCommand {
         : []
       
       // 为指定语言生成详情页
-      const SITE_ROOT = join(BASE_SITE_ROOT, currentLanguage)
       
       // 生成详情页使用新的case_detail.edge模板
       const html = await edge.render('case_detail', {
@@ -323,24 +325,34 @@ export default class ExportStatic extends BaseCommand {
         // 翻译城市名称，指定地理类型为城市
         const translatedCityName = (await GeoI18nService.translateGeoName(cityName, currentLanguage, 'city')).translatedName
         
-        // 生成简单的城市索引页HTML
-        const cityIndexHtml = `
-<!DOCTYPE html>
-<html lang="${currentLanguage}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${translatedCityName} - ${currentLanguage === 'zh' ? '城市索引' : currentLanguage === 'en' ? 'City Index' : 'Índice de Ciudad'}</title>
-</head>
-<body>
-    <h1>${translatedCityName} - ${currentLanguage === 'zh' ? '城市索引' : currentLanguage === 'en' ? 'City Index' : 'Índice de Ciudad'}</h1>
-    <ul>
-        ${members.map(c => `<li><a href="${c.file}">${c.name}</a> - ${c.date}</li>`).join('')}
-    </ul>
-</body>
-</html>
-        `
-        await fs.writeFile(join(SITE_ROOT, path, 'index.html'), cityIndexHtml)
+        // 生成城市索引页使用city.edge模板
+        const html = await edge.render('city', {
+          cityName: translatedCityName,
+          cases: members,
+          stateSlug: pathSegments[0],
+          countySlug: pathSegments[1],
+          citySlug: pathSegments[2],
+          lang: currentLanguage,
+          urlPathSegments: [pathSegments[0], pathSegments[1], pathSegments[2]],
+          translatedPathSegments: [
+            (await GeoI18nService.translateGeoName(pathSegments[0], currentLanguage, 'state')).translatedName,
+            (await GeoI18nService.translateGeoName(pathSegments[1], currentLanguage, 'county')).translatedName,
+            translatedCityName
+          ],
+          pageTitle: `${translatedCityName} - ${currentLanguage === 'zh' ? '城市索引' : currentLanguage === 'en' ? 'City Index' : 'Índice de Ciudad'}`,
+          i18n: {
+            formatMessage: (key: string) => {
+              const actualKey = key.replace('ui.', '')
+              if (headerTranslations[actualKey]) {
+                return headerTranslations[actualKey][currentLanguage] || key
+              } else {
+                return key
+              }
+            }
+          },
+          process: { env: process.env }
+        })
+        await fs.writeFile(join(SITE_ROOT, path, 'index.html'), html)
         sitemapLinks.push(`${path}/index.html`)
         
         // 存储生成的城市索引页URL
@@ -358,29 +370,39 @@ export default class ExportStatic extends BaseCommand {
         const cityTypes = Array(cityNames.length).fill('city') // 所有城市名称的类型都设为city
         const translatedCityNamesMap = await GeoI18nService.translateGeoNames(cityNames, currentLanguage, cityTypes)
         
-        // 生成简单的州级汇总页HTML
-        const stateIndexHtml = `
-<!DOCTYPE html>
-<html lang="${currentLanguage}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${translatedStateName} - ${currentLanguage === 'zh' ? '州级汇总' : currentLanguage === 'en' ? 'State Summary' : 'Resumen Estatal'}</title>
-</head>
-<body>
-    <h1>${translatedStateName} - ${currentLanguage === 'zh' ? '州级汇总' : currentLanguage === 'en' ? 'State Summary' : 'Resumen Estatal'}</h1>
-    <ul>
-        ${Array.from(cities).map(city => {
-          const cityName = city.split('/').pop() || ''
-          const translatedCityName = translatedCityNamesMap.get(cityName) || cityName
-          return `<li><a href="${city}/index.html">${translatedCityName}</a></li>`
-        }).join('')}
-    </ul>
-</body>
-</html>
-        `
+        // 生成州级汇总页使用state.edge模板
+        const stateCounties = Array.from(cities).map(cityPath => {
+          const countyName = cityPath.split('/')[0]
+          const translatedCountyName = translatedCityNamesMap.get(countyName) || countyName
+          return {
+            slug: countyName,
+            name: translatedCountyName,
+            cases_count: 0 // 这里可以根据实际情况添加案件数量
+          }
+        })
+        
+        const html = await edge.render('state', {
+          stateName: translatedStateName,
+          counties: stateCounties,
+          stateSlug: state,
+          lang: currentLanguage,
+          urlPathSegments: [state],
+          translatedPathSegments: [translatedStateName],
+          pageTitle: `${translatedStateName} - ${currentLanguage === 'zh' ? '州级索引' : currentLanguage === 'en' ? 'State Index' : 'Índice de Estado'}`,
+          i18n: {
+            formatMessage: (key: string) => {
+              const actualKey = key.replace('ui.', '')
+              if (headerTranslations[actualKey]) {
+                return headerTranslations[actualKey][currentLanguage] || key
+              } else {
+                return key
+              }
+            }
+          },
+          process: { env: process.env }
+        })
         await fs.mkdir(join(SITE_ROOT, state), { recursive: true })
-        await fs.writeFile(join(SITE_ROOT, state, 'index.html'), stateIndexHtml)
+        await fs.writeFile(join(SITE_ROOT, state, 'index.html'), html)
         sitemapLinks.push(`${state}/index.html`)
         
         // 存储生成的州级汇总页URL
@@ -388,27 +410,116 @@ export default class ExportStatic extends BaseCommand {
         generatedUrls.push(stateUrl)
       }
 
+      // 4. 生成【县级汇总页】
+      // 构建县到城市的映射
+      const countyGroups: Record<string, Set<string>> = {}
+      for (const [state, cities] of Object.entries(stateGroups)) {
+        for (const cityPath of cities) {
+          const pathSegments = cityPath.split('/')
+          if (pathSegments.length < 2) continue
+          
+          const countySlug = pathSegments[1]
+          const countyPath = `${state}/${countySlug}`
+          
+          if (!countyGroups[countyPath]) {
+            countyGroups[countyPath] = new Set()
+          }
+          countyGroups[countyPath].add(cityPath)
+        }
+      }
+      
+      // 生成每个县的汇总页
+      for (const [countyPath, cities] of Object.entries(countyGroups)) {
+        const pathSegments = countyPath.split('/')
+        if (pathSegments.length < 2) continue
+        
+        const stateSlug = pathSegments[0]
+        const countySlug = pathSegments[1]
+        
+        // 翻译州和县名称
+        const translatedStateName = (await GeoI18nService.translateGeoName(stateSlug, currentLanguage, 'state')).translatedName
+        const translatedCountyName = (await GeoI18nService.translateGeoName(countySlug, currentLanguage, 'county')).translatedName
+        
+        // 翻译城市名称
+        const cityNames = Array.from(cities).map(city => city.split('/').pop() || '')
+        const cityTypes = Array(cityNames.length).fill('city')
+        const translatedCityNamesMap = await GeoI18nService.translateGeoNames(cityNames, currentLanguage, cityTypes)
+        
+        // 准备县页面数据
+        const countyCities = Array.from(cities).map(cityPath => {
+          const citySlug = cityPath.split('/').pop() || ''
+          const translatedCityName = translatedCityNamesMap.get(citySlug) || citySlug
+          return {
+            slug: citySlug,
+            name: translatedCityName,
+            cases_count: 0 // 这里可以根据实际情况添加案件数量
+          }
+        })
+        
+        // 生成县页面使用county.edge模板
+        const html = await edge.render('county', {
+          countyName: translatedCountyName,
+          cities: countyCities,
+          stateSlug: stateSlug,
+          countySlug: countySlug,
+          lang: currentLanguage,
+          urlPathSegments: [stateSlug, countySlug],
+          translatedPathSegments: [translatedStateName, translatedCountyName],
+          pageTitle: `${translatedCountyName} - ${currentLanguage === 'zh' ? '县级索引' : currentLanguage === 'en' ? 'County Index' : 'Índice de Condado'}`,
+          i18n: {
+            formatMessage: (key: string) => {
+              const actualKey = key.replace('ui.', '')
+              if (headerTranslations[actualKey]) {
+                return headerTranslations[actualKey][currentLanguage] || key
+              } else {
+                return key
+              }
+            }
+          },
+          process: { env: process.env }
+        })
+        
+        // 保存县页面
+        await fs.mkdir(join(SITE_ROOT, countyPath), { recursive: true })
+        await fs.writeFile(join(SITE_ROOT, countyPath, 'index.html'), html)
+        sitemapLinks.push(`${countyPath}/index.html`)
+        
+        // 存储生成的县页面URL
+        const countyUrl = `${LOCAL_BASE_URL}/${countyPath}/index.html`
+        generatedUrls.push(countyUrl)
+      }
+
       // 4. 生成【首页】
-      // 生成简单的首页HTML
-      const homeHtml = `
-<!DOCTYPE html>
-<html lang="${currentLanguage}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${currentLanguage === 'zh' ? '首页' : currentLanguage === 'en' ? 'Home' : 'Inicio'}</title>
-</head>
-<body>
-    <h1>${currentLanguage === 'zh' ? '首页' : currentLanguage === 'en' ? 'Home' : 'Inicio'}</h1>
-    <ul>
-        ${Object.keys(stateGroups).map(state => `<li><a href="${state}/index.html">${state.toUpperCase()}</a></li>`).join('')}
-    </ul>
-</body>
-</html>
-      `
+      // 生成首页使用home.edge模板
+      const statesData = Object.keys(stateGroups).map(state => {
+        return {
+          slug: state,
+          name: state.toUpperCase(),
+          cases_count: 0 // 这里可以根据实际情况添加案件数量
+        }
+      })
+      
+      const html = await edge.render('home', {
+        states: statesData,
+        lang: currentLanguage,
+        urlPathSegments: [],
+        translatedPathSegments: [],
+        pageTitle: currentLanguage === 'zh' ? 'GUDQ 全球寻人 - 首页' : currentLanguage === 'en' ? 'GUDQ Global Missing Persons - Home' : 'GUDQ Búsqueda Global de Personas Desaparecidas - Inicio',
+        i18n: {
+          formatMessage: (key: string) => {
+            const actualKey = key.replace('ui.', '')
+            if (headerTranslations[actualKey]) {
+              return headerTranslations[actualKey][currentLanguage] || key
+            } else {
+              return key
+            }
+          }
+        },
+        process: { env: process.env }
+      })
       // 确保SITE_ROOT目录存在
       await fs.mkdir(SITE_ROOT, { recursive: true })
-      await fs.writeFile(join(SITE_ROOT, 'index.html'), homeHtml)
+      await fs.writeFile(join(SITE_ROOT, 'index.html'), html)
       sitemapLinks.push('')
       
       // 存储生成的首页URL
@@ -438,7 +549,30 @@ export default class ExportStatic extends BaseCommand {
       const serveRootDir = join(BASE_SITE_ROOT, currentLanguage)
       // 使用装饰器定义的timeout参数，确保有默认值
       const timeoutSeconds = this.timeout || 5
-      this.startLocalServer(serveRootDir, LOCAL_PORT, timeoutSeconds)
+      
+      // 使用http-server代替自定义服务器
+      const command = `npx http-server ${serveRootDir} -p ${LOCAL_PORT} -o`
+      
+      this.logger.info(`📦 正在启动http-server预览服务器...`)
+      
+      // 启动http-server
+      const { exec } = await import('child_process')
+      const serverProcess = exec(command, (error, stdout, stderr) => {
+        if (error) {
+          this.logger.error(`❌ 服务器启动失败: ${error.message}`)
+          return
+        }
+        if (stderr) {
+          this.logger.warning(`⚠️  服务器警告: ${stderr}`)
+        }
+      })
+      
+      // 设置服务器自动关闭定时器
+      setTimeout(() => {
+        serverProcess.kill()
+        this.logger.info(`⏹️  本地预览服务器已自动关闭（运行时长：${timeoutSeconds} 秒）`)
+      }, timeoutSeconds * 1000)
+      
       this.logger.success(`🚀 首页、州、城市、详情页全链路生成成功！\n🌐 本地预览服务器已启动（${currentLanguage.toUpperCase()}）：${LOCAL_BASE_URL}\n⏱️  服务器将在 ${timeoutSeconds} 秒后自动关闭`)
     } else {
       this.logger.info(`📋 生成的文件保存在：${join(BASE_SITE_ROOT, currentLanguage)}`)

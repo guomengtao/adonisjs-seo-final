@@ -183,14 +183,27 @@ export default class GeminiTagsRun extends BaseCommand {
         return;
       }
       
-      // 2. 检查标签表是否存在
-      const tagsTableExists = await db.connection().rawQuery("PRAGMA table_info(missing_persons_tags)");
+      // 2. 检查标签表是否存在（使用PostgreSQL兼容语法）
+      const tagsTableExists = await db.connection().rawQuery(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'missing_persons_tags'
+        ) AS table_exists;
+      `);
 
-      if (!tagsTableExists.rows || tagsTableExists.rows.length === 0) {
+      let isTagsTableExists = false;
+      if (tagsTableExists.rows && tagsTableExists.rows.length > 0) {
+        isTagsTableExists = tagsTableExists.rows[0].table_exists;
+      } else if (Array.isArray(tagsTableExists) && tagsTableExists.length > 0) {
+        isTagsTableExists = tagsTableExists[0].table_exists;
+      }
+
+      if (!isTagsTableExists) {
         this.logger.info('📋 创建标签表...');
         await db.connection().rawQuery(`
           CREATE TABLE IF NOT EXISTS missing_persons_tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             slug VARCHAR(255) UNIQUE NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -203,7 +216,7 @@ export default class GeminiTagsRun extends BaseCommand {
         await db.connection().rawQuery("CREATE UNIQUE INDEX IF NOT EXISTS missing_persons_tags_slug_unique ON missing_persons_tags (slug);");
         this.logger.info('✅ 标签表创建成功');
       } else {
-        // SQLite不支持通过SQL检查列是否存在，这里简化处理
+        // 检查ai_model字段是否存在
         try {
           // 尝试查询ai_model字段
           await db.connection().rawQuery("SELECT ai_model FROM missing_persons_tags LIMIT 1");
@@ -214,21 +227,35 @@ export default class GeminiTagsRun extends BaseCommand {
         }
       }
 
-      // 3. 检查标签关系表是否存在
-      const relationsTableExists = await db.connection().rawQuery("PRAGMA table_info(missing_persons_tag_relations)");
-
-      if (!relationsTableExists.rows || relationsTableExists.rows.length === 0) {
-        this.logger.info('📋 创建标签关系表...');
-        await db.connection().rawQuery(`
-          CREATE TABLE IF NOT EXISTS missing_persons_tag_relations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            case_id VARCHAR(255) NOT NULL,
-            tag_id INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-        await db.connection().rawQuery("CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_case_tag ON missing_persons_tag_relations (case_id, tag_id);");
-        this.logger.info('✅ 标签关系表创建成功');
+      // 尝试删除现有的标签关系表，以便重新创建正确的表结构
+      try {
+        this.logger.info('🗑️  尝试删除现有的标签关系表...');
+        await db.connection().rawQuery('DROP TABLE IF EXISTS missing_persons_tag_relations;');
+        this.logger.info('✅ 标签关系表删除成功');
+      } catch (error) {
+        this.logger.error(`❌ 删除标签关系表失败: ${error.message}`);
+        // 继续执行，不中断程序
+      }
+      
+      // 重新创建标签关系表
+      this.logger.info('📋 重新创建标签关系表...');
+      await db.connection().rawQuery(`
+        CREATE TABLE IF NOT EXISTS missing_persons_tag_relations (
+          id SERIAL PRIMARY KEY,
+          case_id VARCHAR(255) NOT NULL,
+          tag_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      this.logger.info('✅ 标签关系表创建成功');
+      
+      // 添加唯一约束
+      try {
+        await db.connection().rawQuery("ALTER TABLE missing_persons_tag_relations ADD CONSTRAINT idx_unique_case_tag UNIQUE (case_id, tag_id);");
+        this.logger.info('✅ 已添加case_id和tag_id的唯一约束');
+      } catch (error) {
+        this.logger.error(`❌ 添加唯一约束失败: ${error.message}`);
+        // 继续执行，不中断程序
       }
 
       // 4. 保存标签
@@ -255,6 +282,7 @@ export default class GeminiTagsRun extends BaseCommand {
           }
           
           // 先检查标签是否已存在
+          this.logger.debug(`   🔍 检查标签是否存在: ${slug}`);
           const existingTag = await db.connection().rawQuery(`SELECT * FROM missing_persons_tags WHERE slug = ?`, [slug]);
           
           // 处理不同的结果格式
@@ -275,10 +303,13 @@ export default class GeminiTagsRun extends BaseCommand {
             this.logger.info(`   🔄 标签 ${slug} 已存在`);
           } else {
             // 标签不存在，插入新记录
+            this.logger.debug(`   📝 准备插入标签 ${slug}，参数: [en=${en}, slug=${slug}, zh=${zh}, es=${es}, modelName=${modelName}]`);
             const insertResult = await db.connection().rawQuery(
               `INSERT INTO missing_persons_tags (name, slug, name_zh, name_es, ai_model) VALUES (?, ?, ?, ?, ?) RETURNING id`,
               [en, slug, zh, es, modelName]
             );
+            
+            this.logger.debug(`   📝 插入结果: ${JSON.stringify(insertResult)}`);
             
             // 处理不同的结果格式
             let insertResultData;
@@ -292,22 +323,26 @@ export default class GeminiTagsRun extends BaseCommand {
             
             if (insertResultData && insertResultData.id) {
               tagId = insertResultData.id;
-              this.logger.info(`   📝 插入标签 ${slug} 成功`);
+              this.logger.info(`   📝 插入标签 ${slug} 成功，生成的ID: ${tagId}`);
             } else {
-              this.logger.error(`   ❌ 插入标签 ${slug} 失败`);
+              this.logger.error(`   ❌ 插入标签 ${slug} 失败，无法获取生成的ID`);
               continue;
             }
           }
           
           // 保存案件与标签的关系
-            try {
-              await db.connection().rawQuery(
-                `INSERT INTO missing_persons_tag_relations (case_id, tag_id) VALUES (?, ?) ON CONFLICT (case_id, tag_id) DO NOTHING`,
-                [caseId, tagId]
-              );
-              this.logger.info(`   📝 关联标签 ${slug} 到案件 ${caseId} 成功`);
-            } catch (error) {
+          try {
+            this.logger.debug(`   📝 准备关联标签 ${slug} (ID: ${tagId}) 到案件 ${caseId}`);
+            // 使用更简单的冲突处理方式，不依赖特定的约束名称
+            const relationResult = await db.connection().rawQuery(
+              `INSERT INTO missing_persons_tag_relations (case_id, tag_id) VALUES (?, ?) ON CONFLICT (case_id, tag_id) DO NOTHING`,
+              [caseId, tagId]
+            );
+            this.logger.debug(`   📝 关联结果: ${JSON.stringify(relationResult)}`);
+            this.logger.info(`   📝 关联标签 ${slug} 到案件 ${caseId} 成功`);
+          } catch (error) {
             this.logger.error(`   ❌ 关联标签 ${slug} 到案件 ${caseId} 失败: ${(error as Error).message}`);
+            this.logger.error(`   📝 关联参数: caseId=${caseId}, tagId=${tagId}`);
             continue;
           }
           

@@ -1,0 +1,147 @@
+@extends('_base')
+
+@section('content')
+<div class="py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold mb-8">{{ lang === 'zh' ? '搜索失踪人员' : lang === 'en' ? 'Search Missing Persons' : 'Buscar Personas Desaparecidas' }}</h1>
+        
+        <!-- 搜索区域 -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="{{ lang === 'zh' ? '按姓名或案件ID搜索...' : lang === 'en' ? 'Search by name or case ID...' : 'Buscar por nombre o ID de caso...' }}" class="search-input rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 px-4 py-2 w-full">
+        </div>
+        
+        <!-- 搜索结果 -->
+        <div id="searchResults" class="search-results mt-4">
+            <div class="loading text-center text-gray-500 py-8">{{ lang === 'zh' ? '加载搜索数据中...' : lang === 'en' ? 'Loading search data...' : 'Cargando datos de búsqueda...' }}</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .search-input {
+        border-radius: 20px;
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        font-size: 16px;
+        width: 100%;
+    }
+    .search-results {
+        margin-top: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    .result-item {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+    }
+    .result-item:hover {
+        background-color: #f5f5f5;
+    }
+    .result-name {
+        font-weight: bold;
+        font-size: 16px;
+    }
+    .result-id {
+        font-size: 14px;
+        color: #666;
+        margin-top: 4px;
+    }
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
+    .no-results {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
+    /* 隐藏电脑端滚动条，保持简洁 */
+    @media (min-width: 1024px) { 
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    }
+</style>
+
+<script>
+    // 搜索数据数组
+    let searchData = [];
+    
+    // 加载搜索数据
+    async function loadSearchData() {
+        try {
+            const response = await fetch('./dist/search_local.txt');
+            const text = await response.text();
+            
+            // 解析搜索数据
+            searchData = text.split('\n')
+                .filter(line => line.trim())
+                .map(line => {
+                    const [name, caseId, path] = line.split('|');
+                    return { name, caseId, path };
+                });
+            
+            document.getElementById('searchResults').innerHTML = '<div class="no-results text-center text-gray-500 py-8">{{ lang === "zh" ? "开始输入以搜索..." : lang === "en" ? "Start typing to search..." : "Empiece a escribir para buscar..." }}</div>';
+        } catch (error) {
+            console.error('Error loading search data:', error);
+            document.getElementById('searchResults').innerHTML = '<div class="no-results text-center text-red-500 py-8">{{ lang === "zh" ? "加载搜索数据出错。请稍后重试。" : lang === "en" ? "Error loading search data. Please try again later." : "Error al cargar datos de búsqueda. Por favor, inténtelo de nuevo más tarde." }}</div>';
+        }
+    }
+    
+    // 执行搜索
+    function performSearch(query) {
+        if (!query.trim()) {
+            document.getElementById('searchResults').innerHTML = '<div class="no-results text-center text-gray-500 py-8">{{ lang === "zh" ? "开始输入以搜索..." : lang === "en" ? "Start typing to search..." : "Empiece a escribir para buscar..." }}</div>';
+            return;
+        }
+        
+        const lowercaseQuery = query.toLowerCase();
+        const results = searchData.filter(item => 
+            item.name.toLowerCase().includes(lowercaseQuery) || 
+            item.caseId.toLowerCase().includes(lowercaseQuery)
+        );
+        
+        displayResults(results);
+    }
+    
+    // 显示搜索结果
+    function displayResults(results) {
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results text-center text-gray-500 py-8">{{ lang === "zh" ? "未找到匹配结果。" : lang === "en" ? "No matching results found." : "No se encontraron resultados coincidentes." }}</div>';
+            return;
+        }
+        
+        let resultsHTML = '';
+        for (let i = 0; i < results.length; i++) {
+            const item = results[i];
+            resultsHTML += '<div class="result-item border-b border-gray-200 py-4 px-2 hover:bg-gray-50 rounded-lg transition-colors" onclick="window.location.href=\'./' + item.path + '/index.html\'"><div class="result-name font-semibold text-lg">' + escapeHtml(item.name) + '</div><div class="result-id text-sm text-gray-600">Case ID: ' + escapeHtml(item.caseId) + '</div></div>';
+        }
+        
+        resultsContainer.innerHTML = resultsHTML;
+    }
+    
+    // HTML转义函数
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSearchData();
+        
+        // 搜索输入事件
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', () => {
+            performSearch(searchInput.value);
+        });
+        
+        // 自动聚焦搜索框
+        searchInput.focus();
+    });
+</script>
+@endsection

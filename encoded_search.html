@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+    <title>案件搜索</title>
+</head>
+<body>
+    <input id="s" placeholder="搜索">
+    <div id="r">请输入关键词</div>
+    
+    <script>
+    // 解码并执行JavaScript代码
+    function decodeAndExecute(base64) {
+        var decoded = atob(base64);
+        var script = document.createElement('script');
+        script.textContent = decoded;
+        document.body.appendChild(script);
+    }
+    
+    // Base64编码的JavaScript代码
+    var jsCode = 'dmFyIGQ9W107ZmV0Y2goIi4vZGlzdC9zZWFyY2hfbG9jYWwudHh0IikudGhlbigocikgPT4gci50ZXh0KCkpLnRoZW4odCh0KSB7ZD10LnNwbGl0KCJcblwiKS5maWx0ZXIoKGwpID0+IGwudHJpbSgpKS5tYXAoKGwpIHt2YXIgcD1sLnNwbGl0KCJ8Iik7cmV0dXJuIHtuYW1lPXBbMF0sY2FzZU5vPXBbMV0scGF0aD1wWzJdfX0pIn0pLmNhdGNoKGU9PmVycnJ5LmVycm9yKCdMZWFkIGZhaWxlZCcsIGUpKTtkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicyIpLm9uaW1wdXQ9ZnVuY3Rpb24oKXt2YXIgcT10aGlzLnZhbHVlO3ZhciByPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJyIik7aWYoIXEpci5pbm5lckhUTUw9IiI7ZWxzZXtyLmlubmVySFRNTD0iLi4uIjtzZXRUaW1lb3V0KGZ1bmN0aW9uKCl7dmFyIGY9ZC5maWx0ZXIoKGkpID0+IGkubmFtZS50b0xvd2VyY2FzZSgpLmluY2x1ZGVzKHEudG9Mb3dlcmNhc2UoKSkgfHwgaS5jYXNlTm8udG9Mb3dlcmNhc2UoKS5pbmNsdWRlcyhxLnRvTG93ZXJjYXNlKCkpKTtyLmlubmVySFRNTD1mLmxlbmd0aD8gZi5tYXAoKGkpID0+ICI8ZGl2IG9uY2xpY2s9IndpbmRvdy5sb2NhdGlvbj5cJyArIGkucGF0aCArICJcIj4iICsgai5uYW1lICsgIiAtICIgKyBpLmNhc2VObyArICI8L2Rpdj4iKQouam9pbihcIiIpIDogIm5vbmUiO30sIDEwMCk7fX07';
+    
+    // 执行代码
+    decodeAndExecute(jsCode);
+    </script>
+</body>
+</html>

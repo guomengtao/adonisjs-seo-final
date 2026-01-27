@@ -1,0 +1,57 @@
+@include('_head', {
+  title: pageTitle || (lang === 'zh' ? 'GUDQ 全球寻人 - 寻找失踪人员' : 'GUDQ Global Missing Persons Database'),
+  description: pageDescription || 'GUDQ Global Missing Persons Database - Helping find missing individuals worldwide.',
+  canonical: (lang === 'zh' ? 'https://cn.missing.gudq.com' : 'https://en.missing.gudq.com') + (urlPathSegments.length ? '/' + urlPathSegments.join('/') : ''),
+  customStyles: 'body { font-family: -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; } .safe-bottom { padding-bottom: env(safe-area-inset-bottom); } strong { font-weight: bold; color: red; } @media (min-width: 1024px) { ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } }',
+  jsonLd: JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "GUDQ Global Missing Persons",
+    "url": "https://gudata.org",
+    "description": "Global Missing Persons Database - Professional platform to help find missing individuals",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://gudata.org/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  })
+})
+
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+
+  <!-- Include common header template -->
+  @include('_header')
+
+  <!-- Breadcrumb navigation -->
+  <div class="max-w-6xl mx-auto px-4 lg:px-8 py-4">
+    <div class="text-sm text-slate-500">
+      <a href="/" class="hover:text-blue-400 transition-colors">
+        {{ i18n.formatMessage('ui.home') || (lang === 'zh' ? '首页' : 'Home') }}
+      </a>
+      @if(urlPathSegments.length > 0)
+        @each((segment, index) in urlPathSegments)
+          <span class="mx-2">/</span>
+          @if(index === urlPathSegments.length - 1)
+            <span class="text-slate-400">
+              {{ translatedPathSegments ? translatedPathSegments[index] : segment }}
+            </span>
+          @else
+            <a href="/{{ urlPathSegments.slice(0, index + 1).join('/') }}" class="hover:text-blue-400 transition-colors">
+              {{ translatedPathSegments ? translatedPathSegments[index] : segment }}
+            </a>
+          @endif
+        @endeach
+      @endif
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main class="max-w-6xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
+    @!section('content')
+  </main>
+
+  <!-- Include common footer template -->
+  @include('_footer')
+
+</body>
+</html>

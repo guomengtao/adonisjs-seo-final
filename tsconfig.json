@@ -7,7 +7,8 @@
     "paths": {
       "@adonisjs/core/ace": ["node_modules/@adonisjs/core/build/modules/ace/main"],
       "@adonisjs/lucid/services/db": ["node_modules/@adonisjs/lucid/build/services/db"],
-      "#services/*": ["app/services/*"]
+      "#services/*": ["app/services/*"],
+      "#templates/*": ["app/templates/*"]
     }
   },
   "exclude": ["drizzle.config.ts"]

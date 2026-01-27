@@ -133,3 +133,20 @@ router.get('/', async () => {
     hello: 'world',
   }
 })
+
+// 静态文件路由 - 提供CSS文件
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+router.get('/dist/localtailwind.css', async ({ response }) => {
+  try {
+    const cssPath = resolve(process.cwd(), 'dist', 'localtailwind.css')
+    const cssContent = await readFile(cssPath)
+    
+    response.header('Content-Type', 'text/css')
+    response.header('Cache-Control', 'public, max-age=3600')
+    return cssContent
+  } catch (error) {
+    response.status(404).send('CSS file not found')
+  }
+})

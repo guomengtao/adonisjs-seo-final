@@ -1,0 +1,40 @@
+@extends('_base')
+
+@section('content')
+<div class="mb-12">
+  <h1 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
+    {{ cityName }}
+  </h1>
+  <p class="text-slate-400">{{ lang === 'zh' ? '城市失踪人员案件汇总' : 'City Missing Persons Summary' }}</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @each(caseItem in cases)
+      <a href="/{{ stateSlug }}/{{ countySlug }}/{{ citySlug }}/{{ caseItem.file }}" class="bg-slate-900/50 rounded-3xl p-6 border border-slate-800 shadow-2xl hover:border-slate-700 transition-all hover:shadow-lg">
+        <h2 class="text-xl font-bold text-white mb-2">{{ caseItem.name }}</h2>
+        <p class="text-slate-500 text-sm">{{ caseItem.date }}</p>
+      </a>
+    @endeach
+  </div>
+
+<!-- Previous/Next Case Navigation -->
+@if(previousCase || nextCase)
+  <div class="flex justify-between items-center mt-12 pt-8 border-t border-slate-800">
+    @if(previousCase)
+      <a href="/{{ previousCase.path }}" class="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+        <span>{{ lang === 'zh' ? '上一个案件' : 'Previous Case' }}</span>
+      </a>
+    @else
+      <div></div>
+    @endif
+    
+    @if(nextCase)
+      <a href="/{{ nextCase.path }}" class="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+        <span>{{ lang === 'zh' ? '下一个案件' : 'Next Case' }}</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+      </a>
+    @endif
+  </div>
+@endif
+@endsection

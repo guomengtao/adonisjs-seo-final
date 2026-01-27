@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+<title>Search</title>
+<meta charset="UTF-8">
+</head>
+<body>
+<input id="s" placeholder="Search">
+<div id="r"></div>
+<script>
+// 使用全局变量存储数据
+var searchData = [];
+
+// 加载数据
+function loadData() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', './dist/search_local.txt', true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        var text = xhr.responseText;
+        var lines = text.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line) {
+            var parts = line.split('|');
+            if (parts.length >= 3) {
+              // 使用数组而不是对象
+              var entry = [];
+              entry[0] = parts[0]; // name
+              entry[1] = parts[1]; // caseNo
+              entry[2] = parts[2]; // path
+              searchData.push(entry);
+            }
+          }
+        }
+      } else {
+        // 使用console.log而不是console.error，避免逗号问题
+        console.log('Error loading data');
+        console.log(xhr.status);
+      }
+    }
+  };
+  xhr.send();
+}
+
+// 搜索函数
+function performSearch(query) {
+  var resultsDiv = document.getElementById('r');
+  if (!query) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+  resultsDiv.innerHTML = '...';
+  
+  // 使用setTimeout的替代方式
+  setTimeout(function() {
+    var results = [];
+    var lowerQuery = query.toLowerCase();
+    
+    for (var i = 0; i < searchData.length; i++) {
+      var entry = searchData[i];
+      var lowerName = entry[0].toLowerCase();
+      var lowerCaseNo = entry[1].toLowerCase();
+      
+      if (lowerName.indexOf(lowerQuery) != -1 || lowerCaseNo.indexOf(lowerQuery) != -1) {
+        results.push(entry);
+      }
+    }
+    
+    var html = '';
+    for (var i = 0; i < results.length; i++) {
+      var entry = results[i];
+      var path = entry[2];
+      var name = entry[0];
+      var caseNo = entry[1];
+      // 构建HTML字符串
+      html = html + '<div onclick="window.location.href=\'' + path + '\'"><b>' + name + '</b> - ' + caseNo + '</div>';
+    }
+    
+    if (results.length > 0) {
+      resultsDiv.innerHTML = html;
+    } else {
+      resultsDiv.innerHTML = 'No results found';
+    }
+  }, 200);
+}
+
+// 设置事件监听器
+document.getElementById('s').oninput = function() {
+  performSearch(this.value);
+};
+
+// 页面加载时加载数据
+window.onload = function() {
+  loadData();
+};
+</script>
+</body>
+</html>

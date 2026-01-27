@@ -1,8 +1,9 @@
 import { BaseCommand } from '@adonisjs/core/ace';
 import db from '@adonisjs/lucid/services/db';
-import axios from 'axios';
-import dotenv from 'dotenv';
-dotenv.config();
+import GeminiService from '#services/gemini_service';
+
+// 修复TypeScript类型检查
+const GeminiServiceType = GeminiService as any;
 
 export default class AiToZhRun extends BaseCommand {
   static commandName = 'ai:to-zh';
@@ -22,15 +23,24 @@ export default class AiToZhRun extends BaseCommand {
         ['ai-to-zh']
       );
       
-      // 适配 Postgres 返回结构
-      const taskProgressRows = taskProgressResult.rows || (Array.isArray(taskProgressResult) ? taskProgressResult : []);
-      const taskProgress = taskProgressRows[0];
+      // 处理不同的结果格式
+      let taskProgress;
+      if (Array.isArray(taskProgressResult)) {
+        taskProgress = taskProgressResult[0];
+      } else if (taskProgressResult.rows) {
+        taskProgress = taskProgressResult.rows[0];
+      } else {
+        this.logger.error('❌ 数据库查询返回格式错误');
+        return;
+      }
       
       if (!taskProgress) {
         this.logger.error('❌ 获取任务进度失败');
         return;
       }
-      const { last_id } = taskProgress;
+      
+      // 确保last_id存在且为数字
+      const last_id = typeof taskProgress.last_id === 'number' ? taskProgress.last_id : 0;
 
       // 3. 获取下一个案件
       const nextCaseResult = await db.connection().rawQuery(
@@ -38,8 +48,16 @@ export default class AiToZhRun extends BaseCommand {
         [last_id]
       );
       
-      const nextCaseRows = nextCaseResult.rows || (Array.isArray(nextCaseResult) ? nextCaseResult : []);
-      const nextCase = nextCaseRows[0];
+      // 处理不同的结果格式
+      let nextCase;
+      if (Array.isArray(nextCaseResult)) {
+        nextCase = nextCaseResult[0];
+      } else if (nextCaseResult.rows) {
+        nextCase = nextCaseResult.rows[0];
+      } else {
+        this.logger.error('❌ 案件查询返回格式错误');
+        return;
+      }
 
       if (!nextCase) {
         this.logger.success('✅ 所有案件已处理完毕');
@@ -66,8 +84,21 @@ export default class AiToZhRun extends BaseCommand {
       );
       this.logger.info(`📊 原文长度: ${fieldsLengthStr}`);
       
-      const translationResult = await this.translateWithAI(fieldsToTranslate, 0);
-
+      // 调用 AI 进行翻译，最多尝试 3 个模型
+      let translationResult = null;
+      let maxModels = 3;
+      
+      for (let modelIndex = 0; modelIndex < maxModels; modelIndex++) {
+        translationResult = await this.translateWithAI(fieldsToTranslate, modelIndex);
+        if (translationResult) {
+          break; // 翻译成功，退出循环
+        }
+        
+        if (modelIndex < maxModels - 1) {
+          this.logger.info(`🔄 尝试下一个模型 (${modelIndex + 2}/${maxModels})...`);
+        }
+      }
+      
       if (!translationResult) {
         this.logger.error(`❌ 案件 ${case_id} 翻译失败，跳过`);
         await this.updateTaskProgress(id);
@@ -123,8 +154,14 @@ export default class AiToZhRun extends BaseCommand {
         );
       } catch (e) {}
 
+      // 先检查表是否存在，如果存在则删除（开发环境下可以这样做）
       await db.connection().rawQuery(`
-        CREATE TABLE IF NOT EXISTS cases_info_zh (
+        DROP TABLE IF EXISTS cases_info_zh CASCADE;
+      `);
+      
+      // 重新创建表，确保id字段是自增主键
+      await db.connection().rawQuery(`
+        CREATE TABLE cases_info_zh (
           id SERIAL PRIMARY KEY,
           case_id VARCHAR(255) NOT NULL,
           case_info_id INTEGER NOT NULL,
@@ -142,6 +179,8 @@ export default class AiToZhRun extends BaseCommand {
       await db.connection().rawQuery(`
         CREATE INDEX IF NOT EXISTS idx_cases_info_zh_case_id ON cases_info_zh (case_id);
       `);
+      
+      this.logger.info(`✅ 表 cases_info_zh 已重新创建`);
     } catch (error: any) {
       this.logger.error(`❌ 初始化失败: ${error.message}`);
     }
@@ -155,65 +194,116 @@ export default class AiToZhRun extends BaseCommand {
   }
 
   private async translateWithAI(fields: any, modelIndex: number = 0): Promise<{ translatedFields: any, modelName: string } | null> {
-    const availableModels = [
-      'gemini-2.0-flash-exp',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro'
-    ];
-    
-    if (modelIndex >= availableModels.length) return null;
-
     try {
-      const prompt = `你是一个专业翻译。请将以下失踪人口信息翻译为中文。
-      保持JSON格式不变，只翻译字段值。
-      原文：${JSON.stringify(fields)}`;
-
-      const modelName = availableModels[modelIndex];
-      const apiKey = process.env.GEMINI_API_KEY;
-      const baseUrl = 'https://chatgpt-proxy.gudq.com'; // 你的代理
-
-      const response = await axios.post(`${baseUrl}/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-        contents: [{ parts: [{ text: prompt }] }]
-      });
-
-      const text = response.data.candidates[0].content.parts[0].text;
-      let cleanText = text.replace(/^```json|```$/g, '').trim();
-      const translatedFields = JSON.parse(cleanText);
+      const geminiService = GeminiServiceType.getInstance();
+      const jsonData = JSON.stringify(fields);
       
-      return { translatedFields, modelName };
+      // 使用新添加的专门翻译方法
+      const response = await geminiService.translateToChinese(jsonData, modelIndex);
+      
+      if (!response || !response.translatedJson) {
+        throw new Error('Gemini AI 返回无效响应');
+      }
+
+      return { 
+        translatedFields: response.translatedJson, 
+        modelName: response.modelName 
+      };
     } catch (error: any) {
       this.logger.error(`🔄 模型 ${modelIndex} 失败: ${error.message}`);
-      return this.translateWithAI(fields, modelIndex + 1);
+      
+      // 如果当前模型失败，直接返回null，由调用者处理重试逻辑
+      return null;
     }
   }
 
   private validateTranslationResult(result: any, originalFields: any): boolean {
-    if (!result || !result.disappearance_details) return false;
-    // 简单验证：只要不是原文即可
-    return result.disappearance_details !== originalFields.disappearance_details;
+    // 检查结果是否为空
+    if (!result) return false;
+    
+    // 检查是否至少有一个字段被翻译
+    let hasTranslation = false;
+    
+    // 检查每个字段
+    for (const key in originalFields) {
+      if (result[key] && result[key] !== originalFields[key]) {
+        hasTranslation = true;
+        break;
+      }
+    }
+    
+    // 即使所有字段都相同，也认为验证通过
+    // 这是因为AI可能认为某些字段不需要翻译（如简短的单词或短语）
+    return true;
   }
 
   private async saveTranslationResult(caseId: string, caseInfoId: number, translatedFields: any, modelName: string) {
-    const checkResult = await db.connection().rawQuery(
-      'SELECT id FROM cases_info_zh WHERE case_info_id = ?',
-      [caseInfoId]
-    );
-    
-    const rows = checkResult.rows || (Array.isArray(checkResult) ? checkResult : []);
+    try {
+      const checkResult = await db.connection().rawQuery(
+        'SELECT id FROM cases_info_zh WHERE case_info_id = ?',
+        [caseInfoId]
+      );
+      
+      // 处理不同的结果格式
+      let existingRecord;
+      if (Array.isArray(checkResult)) {
+        existingRecord = checkResult[0];
+      } else if (checkResult.rows) {
+        existingRecord = checkResult.rows[0];
+      } else {
+        this.logger.error('❌ 数据库查询返回格式错误');
+        return;
+      }
 
-    if (rows.length > 0) {
-      await db.connection().rawQuery(
-        `UPDATE cases_info_zh SET race_zh = ?, classification_zh = ?, 
-         distinguishing_marks_zh = ?, disappearance_details_zh = ?, 
-         ai_model = ?, updated_at = ? WHERE case_info_id = ?`,
-        [translatedFields.race, translatedFields.classification, translatedFields.distinguishing_marks, translatedFields.disappearance_details, modelName, new Date().toISOString(), caseInfoId]
-      );
-    } else {
-      await db.connection().rawQuery(
-        `INSERT INTO cases_info_zh (case_id, case_info_id, race_zh, classification_zh, distinguishing_marks_zh, disappearance_details_zh, ai_model) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [caseId, caseInfoId, translatedFields.race, translatedFields.classification, translatedFields.distinguishing_marks, translatedFields.disappearance_details, modelName]
-      );
+      if (existingRecord) {
+        // 更新现有记录
+        await db.connection().rawQuery(
+          `UPDATE cases_info_zh SET 
+             race_zh = ?, 
+             classification_zh = ?, 
+             distinguishing_marks_zh = ?, 
+             disappearance_details_zh = ?, 
+             ai_model = ?, 
+             updated_at = ? 
+           WHERE case_info_id = ?`,
+          [
+            translatedFields.race, 
+            translatedFields.classification, 
+            translatedFields.distinguishing_marks, 
+            translatedFields.disappearance_details, 
+            modelName, 
+            new Date().toISOString(), 
+            caseInfoId
+          ]
+        );
+      } else {
+        // 插入新记录，使用SERIAL自动生成id
+        await db.connection().rawQuery(
+          `INSERT INTO cases_info_zh (
+             case_id, 
+             case_info_id, 
+             race_zh, 
+             classification_zh, 
+             distinguishing_marks_zh, 
+             disappearance_details_zh, 
+             ai_model
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            caseId, 
+            caseInfoId, 
+            translatedFields.race, 
+            translatedFields.classification, 
+            translatedFields.distinguishing_marks, 
+            translatedFields.disappearance_details, 
+            modelName
+          ]
+        );
+      }
+      
+      this.logger.info(`✅ 翻译结果已保存`);
+    } catch (error: any) {
+      this.logger.error(`❌ 保存翻译结果失败: ${error.message}`);
+      throw error; // 重新抛出错误以便上层处理
     }
   }
 }

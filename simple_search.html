@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>案件搜索</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <input id="s" placeholder="搜索">
+    <div id="r"></div>
+    
+    <script>
+    // 简单搜索
+    var data = [];
+    
+    // 加载数据
+    fetch("./dist/search_local.txt")
+        .then(function(r) {
+            return r.text();
+        })
+        .then(function(t) {
+            data = t.split("\n")
+                .filter(function(l) {
+                    return l.trim();
+                })
+                .map(function(l) {
+                    var p = l.split("|");
+                    return {
+                        name: p[0],
+                        caseNo: p[1],
+                        path: p[2]
+                    };
+                });
+        })
+        .catch(function(e) {
+            console.error("加载失败", e);
+        });
+    
+    // 搜索
+    document.getElementById("s").oninput = function() {
+        var q = this.value;
+        var r = document.getElementById("r");
+        
+        if (!q) {
+            r.innerHTML = "";
+            return;
+        }
+        
+        r.innerHTML = "...";
+        
+        setTimeout(function() {
+            var f = data.filter(function(i) {
+                return i.name.toLowerCase().includes(q.toLowerCase()) || 
+                       i.caseNo.toLowerCase().includes(q.toLowerCase());
+            });
+            
+            r.innerHTML = f.length ? 
+                f.map(function(i) {
+                    return "<div onclick=\"window.location.href='" + i.path + "'\">" + 
+                           i.name + " - " + i.caseNo + "</div>";
+                }).join("") : 
+                "无结果";
+        }, 100);
+    };
+    </script>
+</body>
+</html>

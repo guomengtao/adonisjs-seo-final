@@ -1,0 +1,3 @@
+# Python dependencies for Hugging Face environment variables synchronization
+python-dotenv>=1.0.0
+huggingface-hub>=0.24.0

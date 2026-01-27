@@ -1,0 +1,60 @@
+import fs from 'fs';
+import path from 'path';
+
+// 创建HTML文件
+const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Search</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <input id="s" placeholder="Search">
+    <div id="r"></div>
+    <script>
+    var d = [];
+    fetch("./dist/search_local.txt")
+        .then(r => r.text())
+        .then(t => {
+            d = t.split("\n")
+                .filter(l => l.trim())
+                .map(l => {
+                    var p = l.split("|");
+                    return {
+                        name: p[0],
+                        caseNo: p[1],
+                        path: p[2]
+                    };
+                });
+        })
+        .catch(e => console.error("Error:", e));
+    
+    document.getElementById("s").oninput = function() {
+        var q = this.value;
+        var r = document.getElementById("r");
+        if (!q) {
+            r.innerHTML = "";
+        } else {
+            r.innerHTML = "...";
+            setTimeout(function() {
+                var f = d.filter(i => 
+                    i.name.toLowerCase().indexOf(q.toLowerCase()) != -1 || 
+                    i.caseNo.toLowerCase().indexOf(q.toLowerCase()) != -1
+                );
+                var h = "";
+                for (var i = 0; i < f.length; i++) {
+                    h += "<div onclick=\"window.location.href=\\'" + f[i].path + "\\'\">" + 
+                         f[i].name + " - " + f[i].caseNo + "</div>";
+                }
+                r.innerHTML = f.length ? h : "No results";
+            }, 200);
+        }
+    };
+    </script>
+</body>
+</html>`;
+
+// 写入文件
+const targetPath = path.join('/Users/Banner/Documents/html-save/english-clear', 'search.html');
+fs.writeFileSync(targetPath, htmlContent, 'utf8');
+console.log('File created successfully at:', targetPath);

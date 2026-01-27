@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>案件搜索</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,Helvetica,sans-serif;background:#f5f5f5;min-height:100vh;-webkit-tap-highlight-color:transparent}.container{max-width:600px;margin:0 auto;padding:20px}.header{padding:20px 0;text-align:center}.header h1{color:#333;font-size:24px;font-weight:600}.search-box{position:relative;margin:20px 0}.search-input{width:100%;padding:12px 16px;border:1px solid #ddd;border-radius:8px;font-size:16px;outline:none;background:white}.search-input:focus{border-color:#007AFF;box-shadow:0 0 0 2px rgba(0,122,255,0.2)}.results{margin-top:20px}.result-item{padding:15px;background:white;border-radius:8px;margin-bottom:10px;border:1px solid #eee;cursor:pointer;transition:all 0.2s}.result-item:hover{background:#f8f9fa;transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.1)}.result-name{font-size:16px;font-weight:600;color:#333}.result-case{font-size:14px;color:#666;margin-top:4px}.loading,.initial-state,.no-results{padding:40px;text-align:center;color:#999}.loading{color:#007AFF}.no-results{color:#ff3b30}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>案件搜索</h1>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="输入姓名或案件编号..." autocomplete="off">
+        </div>
+        <div id="searchResults" class="results">
+            <div class="initial-state">输入关键词开始搜索</div>
+        </div>
+    </div>
+    <script>
+    // 搜索数据
+    var data = [];
+    
+    // 加载真实数据
+    function loadData() {
+        fetch("./dist/search_local.txt")
+            .then(function(response) {
+                return response.text();
+            })
+            .then(function(text) {
+                data = text.split("\n").filter(function(line) {
+                    return line.trim();
+                }).map(function(line) {
+                    var parts = line.split("|");
+                    return { name: parts[0], caseNo: parts[1], path: parts[2] };
+                });
+                document.getElementById("searchResults").innerHTML = "<div class=\"initial-state\">输入关键词开始搜索</div>";
+            })
+            .catch(function(error) {
+                console.error("加载数据失败:", error);
+                document.getElementById("searchResults").innerHTML = "<div class=\"no-results\">数据加载失败</div>";
+            });
+    }
+    
+    function search(query) {
+        var resultsContainer = document.getElementById("searchResults");
+        if (!query.trim()) {
+            resultsContainer.innerHTML = "<div class=\"initial-state\">输入关键词开始搜索</div>";
+            return;
+        }
+        resultsContainer.innerHTML = "<div class=\"loading\">搜索中...</div>";
+        setTimeout(function() {
+            var lowerQuery = query.toLowerCase();
+            var filteredResults = data.filter(function(item) {
+                return item.name.toLowerCase().indexOf(lowerQuery) > -1 || item.caseNo.toLowerCase().indexOf(lowerQuery) > -1;
+            });
+            showResults(filteredResults);
+        }, 200);
+    }
+    
+    function showResults(results) {
+        var resultsContainer = document.getElementById("searchResults");
+        if (results.length === 0) {
+            resultsContainer.innerHTML = "<div class=\"no-results\">未找到匹配结果</div>";
+            return;
+        }
+        var html = "";
+        for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            html += "<div class=\"result-item\" data-path=\"" + item.path + "\">";
+            html += "<div class=\"result-name\">" + escapeHtml(item.name) + "</div>";
+            html += "<div class=\"result-case\">" + escapeHtml(item.caseNo) + "</div>";
+            html += "</div>";
+        }
+        resultsContainer.innerHTML = html;
+        
+        // 添加点击事件监听
+        var items = resultsContainer.querySelectorAll('.result-item');
+        for (var j = 0; j < items.length; j++) {
+            items[j].addEventListener('click', function() {
+                var path = this.getAttribute('data-path');
+                window.location.href = path;
+            });
+        }
+    }
+    
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/'/g, "&#039;");
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener("DOMContentLoaded", function() {
+        loadData();
+        var searchInput = document.getElementById("searchInput");
+        searchInput.addEventListener("input", function() {
+            search(this.value);
+        });
+        searchInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                search(this.value);
+            }
+        });
+        searchInput.focus();
+    });
+    </script>
+</body>
+</html>

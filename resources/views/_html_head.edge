@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="{{ lang || 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title || 'Missing Persons Database' }}</title>
+    {{#if description}}
+    <meta name="description" content="{{ description }}">
+    {{/if}}
+    {{#if keywords}}
+    <meta name="keywords" content="{{ keywords }}">
+    {{/if}}
+    {{#if canonical}}
+    <link rel="canonical" href="{{ canonical }}">
+    {{/if}}
+    
+    <!-- CSS 引入 -->
+    <link href="./dist/localtailwind.css" rel="stylesheet">
+    {{#if customStyles}}
+    <style>
+        {{ customStyles }}
+    </style>
+    {{/if}}
+    
+    <!-- JSON-LD 结构化数据 -->
+    {{#if jsonLd}}
+    <script type="application/ld+json">
+    {{ jsonLd }}
+    </script>
+    {{/if}}
+</head>

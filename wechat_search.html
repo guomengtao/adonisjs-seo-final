@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>失踪人员搜索</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0 15px;
+        }
+        
+        .header {
+            background: #fff;
+            padding: 15px 0;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .search-box {
+            position: relative;
+            margin: 0 auto;
+            max-width: 500px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            background: #f8f8f8;
+            outline: none;
+        }
+        
+        .search-input:focus {
+            border-color: #007AFF;
+            background: #fff;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+        
+        .results {
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            background: #fff;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .result-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        
+        .result-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .result-id {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .initial-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        /* 微信浏览器适配 */
+        @supports (padding: max(0px)) {
+            .container {
+                padding-left: max(15px, env(safe-area-inset-left));
+                padding-right: max(15px, env(safe-area-inset-right));
+            }
+        }
+        
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="搜索姓名或案件编号..." autocomplete="off">
+                <div class="search-icon">🔍</div>
+            </div>
+        </div>
+        
+        <div id="searchResults" class="results">
+            <div class="initial-state">输入关键词开始搜索</div>
+        </div>
+    </div>
+
+    <script>
+        // 搜索数据
+        var searchData = [];
+        
+        // 加载真实数据
+        function loadSearchData() {
+            fetch('http://127.0.0.1:8080/dist/search_local.txt')
+                .then(function(response) { return response.text(); })
+                .then(function(text) {
+                    searchData = text.split('\n')
+                        .filter(function(line) { return line.trim(); })
+                        .map(function(line) {
+                            var parts = line.split('|');
+                            return { name: parts[0], caseId: parts[1], path: parts[2] };
+                        });
+                    
+                    document.getElementById('searchResults').innerHTML = '<div class="initial-state">输入关键词开始搜索</div>';
+                })
+                .catch(function(error) {
+                    console.error('加载数据失败:', error);
+                    document.getElementById('searchResults').innerHTML = '<div class="no-results">数据加载失败，请稍后重试</div>';
+                });
+        }
+        
+        // 搜索函数
+        function performSearch(query) {
+            var resultsContainer = document.getElementById('searchResults');
+            
+            if (!query.trim()) {
+                resultsContainer.innerHTML = '<div class="initial-state">输入关键词开始搜索</div>';
+                return;
+            }
+            
+            // 显示加载状态
+            resultsContainer.innerHTML = '<div class="loading">搜索中...</div>';
+            
+            // 模拟网络延迟
+            setTimeout(function() {
+                var lowercaseQuery = query.toLowerCase();
+                var results = searchData.filter(function(item) {
+                    return item.name.toLowerCase().includes(lowercaseQuery) ||
+                           item.caseId.toLowerCase().includes(lowercaseQuery);
+                });
+                
+                displayResults(results);
+            }, 300);
+        }
+        
+        // 显示结果
+        function displayResults(results) {
+            var resultsContainer = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">未找到匹配的结果</div>';
+                return;
+            }
+            
+            var resultsHTML = '';
+            for (var i = 0; i < results.length; i++) {
+                var item = results[i];
+                resultsHTML += '<div class="result-item" onclick="goToDetail(\'' + item.path + '\')">' +
+                    '<div class="result-name">' + escapeHtml(item.name) + '</div>' +
+                    '<div class="result-id">案件编号: ' + escapeHtml(item.caseId) + '</div>' +
+                    '</div>';
+            }
+            
+            resultsContainer.innerHTML = resultsHTML;
+        }
+        
+        // HTML转义函数
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 跳转到详情页
+        function goToDetail(path) {
+            // 实际使用时需要替换为正确的跳转逻辑
+            alert('跳转到: ' + path);
+            // window.location.href = './' + path + '/index.html';
+        }
+        
+        // 事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSearchData();
+            
+            var searchInput = document.getElementById('searchInput');
+            
+            // 输入搜索
+            searchInput.addEventListener('input', function() {
+                performSearch(this.value);
+            });
+            
+            // 回车搜索
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(this.value);
+                }
+            });
+            
+            // 自动聚焦
+            searchInput.focus();
+        });
+    </script>
+</body>
+</html>

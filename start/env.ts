@@ -10,6 +10,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   
   // 旧模型 Token 改为可选，保持兼容性
   HF_TOKEN: Env.schema.string.optional(),
+  HF_REPO_ID: Env.schema.string.optional(),
   GEMINI_API_KEY: Env.schema.string.optional(),
 
   // 关键：添加 Cloudflare 配置校验

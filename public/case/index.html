@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Missing Persons Case Details</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="./dist/localtailwind.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        /* 隐藏电脑端滚动条，保持简洁 */
+        @media (min-width: 1024px) { 
+            ::-webkit-scrollbar { width: 6px; } 
+            ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } 
+        }
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -17,13 +31,6 @@
             }
         }
     </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -119,20 +126,40 @@
                     ${data.images && data.images.length > 0 ? `
                         <div class="mb-8">
                             <h3 class="text-lg font-semibold mb-4 text-gray-800">${data.images.length} ${data.images.length === 1 ? 'Image' : 'Images'}</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${data.images.map((img, index) => `
-                                    <div class="rounded-lg overflow-hidden shadow-md bg-white p-3">
-                                        ${img.isPrimary ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">Primary</span>` : ''}
+                            
+                            <!-- Hero Image - 首屏大图 (4:3比例) -->
+                            ${data.images.length > 0 ? `
+                                <div class="mb-6">
+                                    <div class="rounded-lg overflow-hidden shadow-lg bg-white p-4">
+                                        ${data.images[0].isPrimary ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">Primary</span>` : ''}
                                         <div class="relative">
-                                            <img src="${img.url}" alt="${img.alt || `Image ${index + 1}`}" 
-                                                 class="w-full h-auto max-h-64 object-contain transition-transform duration-300 hover:scale-105"
-                                                 ${img.width > 0 && img.height > 0 ? `width="${img.width}" height="${img.height}"` : ''}>
+                                            <img src="${data.images[0].url}" alt="${data.images[0].alt || `Image 1`}" 
+                                                 class="w-full h-auto aspect-[4/3] object-cover transition-transform duration-300 hover:scale-105"
+                                                 ${data.images[0].width > 0 && data.images[0].height > 0 ? `width="${data.images[0].width}" height="${data.images[0].height}"` : ''}>
                                         </div>
-                                        ${img.caption ? `<p class="text-gray-600 text-sm mt-2 italic">${img.caption}</p>` : ''}
-                                        ${img.width > 0 && img.height > 0 ? `<p class="text-gray-500 text-xs mt-1">${img.width} × ${img.height} pixels</p>` : ''}
+                                        ${data.images[0].caption ? `<p class="text-gray-600 text-sm mt-2 italic">${data.images[0].caption}</p>` : ''}
+                                        ${data.images[0].width > 0 && data.images[0].height > 0 ? `<p class="text-gray-500 text-xs mt-1">${data.images[0].width} × ${data.images[0].height} pixels</p>` : ''}
                                     </div>
-                                `).join('')}
-                            </div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Thumbnail Grid - 缩略图池 (3列矩阵) -->
+                            ${data.images.length > 1 ? `
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    ${data.images.slice(1).map((img, index) => `
+                                        <div class="rounded-lg overflow-hidden shadow-md bg-white p-3">
+                                            ${img.isPrimary ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">Primary</span>` : ''}
+                                            <div class="relative">
+                                                <img src="${img.url}" alt="${img.alt || `Image ${index + 2}`}" 
+                                                     class="w-full h-auto max-h-48 object-cover transition-transform duration-300 hover:scale-105"
+                                                     ${img.width > 0 && img.height > 0 ? `width="${img.width}" height="${img.height}"` : ''}>
+                                            </div>
+                                            ${img.caption ? `<p class="text-gray-600 text-sm mt-2 italic">${img.caption}</p>` : ''}
+                                            ${img.width > 0 && img.height > 0 ? `<p class="text-gray-500 text-xs mt-1">${img.width} × ${img.height} pixels</p>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
                         </div>
                     ` : `<div class="mb-8 p-4 bg-gray-100 rounded-lg text-gray-500">No images available</div>`}
                     

@@ -8,8 +8,15 @@ import type { NextFn } from '@adonisjs/core/types/http'
  */
 export default class ForceJsonResponseMiddleware {
   async handle({ request }: HttpContext, next: NextFn) {
-    const headers = request.headers()
-    headers.accept = 'application/json'
+    // Skip JSON force for static files
+    const url = request.url()
+    const staticFileExtensions = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
+    const isStaticFile = staticFileExtensions.some(ext => url.endsWith(ext))
+    
+    if (!isStaticFile) {
+      const headers = request.headers()
+      headers.accept = 'application/json'
+    }
 
     return next()
   }

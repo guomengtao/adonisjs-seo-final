@@ -165,6 +165,95 @@ summary: 严禁为空。如果原文信息极少，请根据已知碎片信息�
     }
   }
 
+  public async translateToChinese(jsonData: string, modelIndex: number = 0): Promise<{ translatedJson: any | null; modelName: string | null }> {    try {      const modelName = this.availableModels[modelIndex] || this.availableModels[0];      console.log(`🔤 使用模型: ${modelName} 进行翻译...`);
+
+      const prompt = `你是一个专业翻译。请将以下失踪人口信息翻译为中文。
+保持JSON格式不变，只翻译字段值。
+原文：${jsonData}`;
+
+      // 使用代理发送请求，添加30秒超时
+      const response = await axios.post(
+        `${this.baseUrl}/v1beta/models/${modelName.replace('models/', '')}:generateContent`,
+        {
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        },
+        {
+          params: { key: this.apiKey },
+          timeout: 30000, // 30秒超时
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const text = response.data.candidates[0].content.parts[0].text;
+
+      // 清理AI输出，确保是纯JSON
+      let cleanText = text.replace(/^```json|```$/g, '').trim();
+      
+      // 尝试更彻底地清理，移除可能的多余文本
+      cleanText = cleanText.replace(/^[^\[]+([\[\{])/, '$1'); // 移除JSON前的所有文本
+      cleanText = cleanText.replace(/([\]\}])[^\]]+$/, '$1'); // 移除JSON后的所有文本
+      cleanText = cleanText.replace(/\/\*[\s\S]*?\*\//g, ''); // 移除多行注释
+      cleanText = cleanText.replace(/\/\/.*$/gm, ''); // 移除单行注释
+      
+      // 解析JSON，并处理可能的错误
+      let translatedJson;
+      try {
+        translatedJson = JSON.parse(cleanText);
+      } catch (parseError) {
+        // 尝试修复常见的JSON语法错误
+        let fixedText = cleanText;
+        
+        // 修复行尾缺少逗号的问题（如："lang":"es"\n"summary":"..."）
+        fixedText = fixedText.replace(/"\s*:\s*[^,\n}]+\s*\n\s*"/g, (match: string) => {
+          // 查找值的结束位置
+          const valueEndIndex = match.lastIndexOf('\n');
+          if (valueEndIndex > 0) {
+            // 在换行前添加逗号
+            return match.substring(0, valueEndIndex) + ',\n"';
+          }
+          return match;
+        });
+        
+        // 修复缺少逗号的问题（如："key":"value""key2":"value2"）
+        fixedText = fixedText.replace(/"\s*}\s*\s*\{\s*"/g, '"}, {"');
+        fixedText = fixedText.replace(/"\s*}\s*\s*\[\s*"/g, '"}, ["');
+        
+        // 修复缺少逗号的键值对之间的问题（如："key":"value""key2":"value2"）
+        fixedText = fixedText.replace(/("\s*:\s*"[^"\\]*")\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*[0-9]+)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*true)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        fixedText = fixedText.replace(/("\s*:\s*false)\s*("\s*:\s*"[^"\\]*")/g, '$1, $2');
+        
+        // 尝试重新解析修复后的JSON
+        try {
+          translatedJson = JSON.parse(fixedText);
+        } catch (fixedParseError) {
+          throw new Error(`JSON解析失败: ${parseError.message}`);
+        }
+      }
+
+      return { translatedJson, modelName };
+    } catch (error) {
+      console.error('❌ Gemini AI 翻译失败:', error.message);
+      
+      // 如果当前模型失败，尝试下一个模型
+      if (modelIndex < this.availableModels.length - 1) {
+        console.log(`🔄 尝试下一个模型 (${modelIndex + 1}/${this.availableModels.length})...`);
+        return this.translateToChinese(jsonData, modelIndex + 1);
+      }
+      
+      return { translatedJson: null, modelName: null };
+    }
+  }
+
   public async generateMultiLangTags(details: string, modelIndex: number = 0): Promise<{ tags: Array<{ slug: string; en: string; zh: string; es: string }> | null; modelName: string | null }> {
     try {
       const modelName = this.availableModels[modelIndex] || this.availableModels[0];

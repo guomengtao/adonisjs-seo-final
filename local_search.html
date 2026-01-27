@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地搜索</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,sans-serif;background:#f5f5f5;min-height:100vh}
+        .container{max-width:600px;margin:0 auto;padding:20px}
+        .header{padding:20px 0;text-align:center}
+        .header h1{color:#333;font-size:24px;font-weight:600}
+        .search-box{position:relative;margin:20px 0}
+        .search-input{width:100%;padding:12px 16px;border:1px solid #ddd;border-radius:8px;font-size:16px;outline:none}
+        .search-input:focus{border-color:#007AFF}
+        .results{margin-top:20px}
+        .result-item{padding:12px;background:white;border-radius:8px;margin-bottom:8px;border:1px solid #eee}
+        .result-item:hover{background:#f8f9fa}
+        .result-name{font-size:16px;font-weight:600;color:#333}
+        .result-case{font-size:14px;color:#666;margin-top:4px}
+        .loading,.initial-state,.no-results{padding:40px;text-align:center;color:#999}
+        .loading{color:#007AFF}
+        .no-results{color:#ff3b30}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>搜索功能</h1>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="输入姓名或案件编号..." autocomplete="off">
+        </div>
+        <div id="searchResults" class="results">
+            <div class="initial-state">输入关键词开始搜索</div>
+        </div>
+    </div>
+
+    <script>
+        // 搜索数据
+        var data=[];
+        
+        // 加载真实数据
+        function loadData(){
+            fetch('http://127.0.0.1:8080/dist/search_local.txt')
+                .then(function(r){return r.text();})
+                .then(function(t){
+                    data=t.split('\n')
+                        .filter(function(l){return l.trim();})
+                        .map(function(l){
+                            var p=l.split('|');
+                            return{n:p[0],c:p[1],p:p[2]};
+                        });
+                    document.getElementById('searchResults').innerHTML='<div class="initial-state">输入关键词开始搜索</div>';
+                })
+                .catch(function(e){
+                    console.error('加载数据失败:',e);
+                    // 尝试使用相对路径
+                    fetch('../html-save/english-clear/dist/search_local.txt')
+                        .then(function(r){return r.text();})
+                        .then(function(t){
+                            data=t.split('\n')
+                                .filter(function(l){return l.trim();})
+                                .map(function(l){
+                                    var p=l.split('|');
+                                    return{n:p[0],c:p[1],p:p[2]};
+                                });
+                            document.getElementById('searchResults').innerHTML='<div class="initial-state">输入关键词开始搜索</div>';
+                        })
+                        .catch(function(e2){
+                            console.error('备用路径也失败:',e2);
+                            document.getElementById('searchResults').innerHTML='<div class="no-results">数据加载失败，请检查文件路径</div>';
+                        });
+                });
+        }
+        
+        function search(q){
+            var r=document.getElementById('searchResults');
+            if(!q.trim()){r.innerHTML='<div class="initial-state">输入关键词开始搜索</div>';return;}
+            r.innerHTML='<div class="loading">搜索中...</div>';
+            setTimeout(function(){
+                var l=q.toLowerCase(),f=data.filter(function(i){
+                    return i.n.toLowerCase().includes(l)||i.c.toLowerCase().includes(l);
+                });
+                showResults(f);
+            },200);
+        }
+        
+        function showResults(results){
+            var r=document.getElementById('searchResults');
+            if(results.length===0){r.innerHTML='<div class="no-results">未找到匹配结果</div>';return;}
+            
+            var h='';
+            for(var i=0;i<results.length;i++){
+                var item=results[i];
+                h+='<div class="result-item" onclick="goToPage(\''+item.p+'\')">';
+                h+='<div class="result-name">'+escapeHtml(item.n)+'</div>';
+                h+='<div class="result-case">'+escapeHtml(item.c)+'</div>';
+                h+='</div>';
+            }
+            r.innerHTML=h;
+        }
+        
+        function escapeHtml(text){
+            var m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+            return text.replace(/[&<>"']/g,function(match){return m[match];});
+        }
+        
+        function goToPage(path){
+            alert('跳转到: '+path);
+            // window.location.href=path;
+        }
+        
+        document.addEventListener('DOMContentLoaded',function(){
+            loadData();
+            var s=document.getElementById('searchInput');
+            s.addEventListener('input',function(){search(this.value);});
+            s.addEventListener('keypress',function(e){if(e.key==='Enter')search(this.value);});
+            s.focus();
+        });
+    </script>
+</body>
+</html>

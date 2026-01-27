@@ -1,57 +1,21 @@
-@include('_head')
+@extends('_base')
 
-<body class="bg-slate-950 text-slate-200 min-h-screen">
-
-  <!-- Include common header template -->
-  @include('_header')
-
-  <main class="max-w-6xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-      
-      <div class="lg:col-span-2 space-y-8">
-        
-        {{-- Desktop breadcrumb navigation --}}
-        <div class="hidden md:block text-sm text-slate-500 py-2">
-          <a href="/" class="hover:text-blue-400 transition-colors">
-            {{ i18n.formatMessage('ui.home') || '首页' }}
-          </a>
-          <span class="mx-2">/</span>
-          @if(urlPathSegments.length >= 1 && translatedPathSegments)
-            <a href="/{{ urlPathSegments[0] }}" class="hover:text-blue-400 transition-colors">
-              {{ translatedPathSegments[0].toUpperCase() }}
-            </a>
-            <span class="mx-2">/</span>
-          @endif
-          @if(urlPathSegments.length >= 2 && translatedPathSegments)
-            <a href="/{{ urlPathSegments[0] }}/{{ urlPathSegments[1] }}" class="hover:text-blue-400 transition-colors">
-              {{ translatedPathSegments[1].toUpperCase() }}
-            </a>
-            <span class="mx-2">/</span>
-          @endif
-          @if(urlPathSegments.length >= 3 && translatedPathSegments)
-            <a href="/{{ urlPathSegments[0] }}/{{ urlPathSegments[1] }}/{{ urlPathSegments[2] }}" class="hover:text-blue-400 transition-colors">
-              {{ translatedPathSegments[2].toUpperCase() }}
-            </a>
-            <span class="mx-2">/</span>
-          @endif
-          <span class="text-slate-400">
-            {{ missingCase[`name_${lang}`] || missingCase.name }}
-          </span>
-        </div>
-        
-        <header>
-          <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[11px] font-bold mb-4">
-            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
-            CASE #{{ missingCase.case_id }}
-          </div>
-          <h1 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
-            {{ missingCase[`name_${lang}`] || missingCase.name }}
-          </h1>
-          <div class="flex flex-wrap gap-4 text-slate-500 text-sm italic">
-            <span class="flex items-center gap-1">📍 {{ missingCase.missing_state || '未知地区' }}</span>
-            <span class="flex items-center gap-1">📅 {{ missingCase.created_at.toLocaleDateString() }}</span>
-          </div>
-        </header>
+@section('content')
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+  <div class="lg:col-span-2 space-y-8">
+    <header>
+      <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[11px] font-bold mb-4">
+        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+        CASE #{{ missingCase.case_id }}
+      </div>
+      <h1 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
+        {{ missingCase[`name_${lang}`] || missingCase.name }}
+      </h1>
+      <div class="flex flex-wrap gap-4 text-slate-500 text-sm italic">
+        <span class="flex items-center gap-1">📍 {{ missingCase.missing_state || '未知地区' }}</span>
+        <span class="flex items-center gap-1">📅 {{ missingCase.created_at.toLocaleDateString() }}</span>
+      </div>
+    </header>
 
         <section class="bg-slate-900/50 rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl relative overflow-hidden group">
           <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -221,7 +185,4 @@
       </aside>
 
     </div>
-  </main>
-
-  <!-- Include common footer template -->
-  @include('_footer')
+@endsection

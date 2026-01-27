@@ -1,0 +1,13 @@
+<!-- 通用头部片段 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="./dist/localtailwind.css" rel="stylesheet">
+<style>
+    body { font-family: -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    /* 隐藏电脑端滚动条，保持简洁 */
+    @media (min-width: 1024px) { 
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } 
+    }
+</style>

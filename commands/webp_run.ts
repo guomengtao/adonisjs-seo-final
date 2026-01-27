@@ -6,36 +6,30 @@ import { args } from '@adonisjs/core/ace'
 
 export default class ProcessImages extends BaseCommand {
   static commandName = 'webp:run'
-  static description = '全自动流水线：B2 同步 + HF 批量备份'
+  static description = '全自动流水线：支持相对路径补全 + 强力正则匹配 + HF清尾'
   static options = { startApp: true }
 
-  // 使用装饰器定义参数
   @args.string({
     description: '每批次处理的案件数量，默认3个',
     required: false
   })
-  batchSize!: string // 添加明确赋值断言
+  batchSize!: string
 
   async run() {
-    // 获取参数或使用默认值
     const batchSize = parseInt(this.batchSize || '3') || 3
+    const BASE_URL = 'https://charleyproject.org' // 用于补全相对路径
     
-    this.logger.info('🚀 启动图片处理流水线...')
-    this.logger.info(`💡 每次处理${batchSize}个案件，B2即时上传，HF积累${batchSize}个案件后批量上传`)
+    this.logger.info('🚀 启动图片处理流水线 (增强版)...')
     
     const processor = new ImageProcessorService()
-    
-    // HF批量上传队列和计数器
     const hfBatchQueue: HfFile[] = []
     let hfCaseCounter = 0
-    const HF_BATCH_SIZE = batchSize // 使用参数值或默认值
 
     try {
-      // 1. 获取进度统计
       const stats = await this.getStats()
       this.logger.info(`📊 总进度: ${stats.percent}% | 待处理: ${stats.remaining} 个案件`)
 
-      // 2. 获取待处理案件 (关联 info 表获取 url_path) - 每次处理指定数量的案件
+      // 获取待处理案件 (状态 0 为待处理，状态 2 为之前失败的尝试)
       const records = await db
         .from('missing_persons_cases')
         .join('missing_persons_info', 'missing_persons_cases.case_id', 'missing_persons_info.case_id')
@@ -45,34 +39,39 @@ export default class ProcessImages extends BaseCommand {
           'missing_persons_cases.case_html',
           'missing_persons_info.url_path'
         )
-        .where('missing_persons_cases.image_webp_status', 0)
+        .whereIn('missing_persons_cases.image_webp_status', [0, 2]) 
         .whereNotNull('missing_persons_info.url_path')
-        .limit(batchSize) // 使用参数值或默认值
+        .limit(batchSize)
 
       if (records.length === 0) {
         this.logger.success('✅ 所有任务已完成！')
         return
       }
 
-      let processedCasesCount = 0
-      let totalImagesProcessed = 0
-
       for (const record of records) {
         this.logger.info(`🔍 正在处理: ${record.case_id}`)
         
         try {
-          // 设置超时控制
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('处理超时 (90秒)')), 90000)
           })
           
-          // 解析 HTML 中的图片链接
-          const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi
-          const matches = [...(record.case_html?.matchAll(imgRegex) || [])]
-          const urls = matches.map(m => m[1])
+          /**
+           * 改进 1: 强力正则提取
+           * 直接匹配 .jpg 结尾的链接，无论是否在 img 标签内
+           */
+          const html = record.case_html || ''
+          const jpgRegex = /(?:https?:\/\/[^"'>\s]+|wp-content\/uploads\/[^"'>\s]+)\.jpg/gi
+          const rawMatches = html.match(jpgRegex) || []
+          
+          // 去重并补全 URL
+          let urls = [...new Set(rawMatches)].map(url => {
+            if (url.startsWith('http')) return url
+            // 改进 2: 补全相对路径 (charleyproject.org/wp-content/...)
+            return `${BASE_URL}/${url.startsWith('/') ? url.slice(1) : url}`
+          })
 
           if (urls.length === 0) {
-            // 无图案件直接标记完成
             await db.from('missing_persons_cases').where('id', record.id).update({ 
               image_webp_status: 1,
               image_count: 0 
@@ -81,97 +80,84 @@ export default class ProcessImages extends BaseCommand {
             continue
           }
 
+          this.logger.info(`   └─ 🔗 提取到 ${urls.length} 个图片链接`)
+
           const cleanPath = (record.url_path || '').replace(/^\/|\/$/g, '')
 
-          // 3. 调用 Service 处理核心业务 (B2 上传 + 数据库 Assets 录入)
           const processPromise = processor.processCaseImages(record, urls, cleanPath)
-          const result = await Promise.race([processPromise, timeoutPromise])
+          const result = await Promise.race([processPromise, timeoutPromise]) as any
           
-          // 类型断言确保result是正确类型
-          const { caseImageCount, processedForHf } = result as { caseImageCount: number; processedForHf: { path: string; buffer: Buffer }[] }
+          const { caseImageCount, processedForHf } = result
 
-          // 4. 将图片添加到 HF 批量上传队列
+          // 累积到 HF 队列
           if (processedForHf && processedForHf.length > 0) {
-            this.logger.info(`📥 已将 ${processedForHf.length} 张图片加入HF批量上传队列`)
-            
-            // 将当前案件的图片添加到批量队列
-            const hfFiles: HfFile[] = processedForHf.map(item => ({
+            const hfFiles: HfFile[] = processedForHf.map((item: any) => ({
               path: item.path,
               content: new Blob([item.buffer])
             }))
             hfBatchQueue.push(...hfFiles)
           }
 
-          // 5. 更新主表状态
+          // 更新状态
           await db.from('missing_persons_cases').where('id', record.id).update({
             image_webp_status: 1,
             image_count: caseImageCount
           })
 
-          processedCasesCount++
-          totalImagesProcessed += caseImageCount
-          hfCaseCounter++ // 增加案件计数器
+          hfCaseCounter++
+          this.logger.success(`   └─ ✅ 完成！存入 ${caseImageCount} 张图片`)
           
-          this.logger.success(`   └─ ✅ 案件处理完成！存入 ${caseImageCount} 张图片`)
-          this.logger.info(`   📊 HF批量上传进度: ${hfCaseCounter}/${HF_BATCH_SIZE} 个案件`)
-          
-          // 检查是否达到批量上传条件
-          if (hfCaseCounter >= HF_BATCH_SIZE && hfBatchQueue.length > 0) {
-            this.logger.info(`📤 达到${HF_BATCH_SIZE}个案件，开始批量上传 ${hfBatchQueue.length} 张图片到 Hugging Face...`)
-            
-            // HF上传重试机制
-            let hfSuccess = false
-            let retryCount = 0
-            const maxRetries = 3
-            
-            while (retryCount < maxRetries && !hfSuccess) {
-              try {
-                const commitMsg = `Batch upload: ${hfBatchQueue.length} images from ${hfCaseCounter} cases`
-                await HfService.batchUpload(hfBatchQueue, commitMsg)
-                
-                hfSuccess = true
-                this.logger.success(`✨ HF 批量备份同步成功！共上传 ${hfBatchQueue.length} 张图片`)
-                
-                // 清空队列和计数器
-                hfBatchQueue.length = 0
-                hfCaseCounter = 0
-              } catch (hfError) {
-                retryCount++
-                this.logger.error(`   └─ ❌ HF批量上传失败 (${retryCount}/${maxRetries}): ${hfError.message}`)
-                
-                if (retryCount < maxRetries) {
-                  this.logger.info(`   └─ ⏳ 3秒后重试...`)
-                  await new Promise(resolve => setTimeout(resolve, 3000))
-                }
-              }
-            }
-            
-            if (!hfSuccess) {
-              this.logger.error(`   └─ ❌ HF批量上传最终失败，已达到最大重试次数`)
-            }
+          // 达到批量上传条件
+          if (hfCaseCounter >= batchSize && hfBatchQueue.length > 0) {
+            await this.uploadToHf(hfBatchQueue)
+            hfBatchQueue.length = 0
+            hfCaseCounter = 0
           }
           
         } catch (caseError) {
-          this.logger.error(`   └─ ❌ 案件处理失败: ${caseError.message}`)
-          // 标记为失败状态，避免重复处理
+          this.logger.error(`   └─ ❌ 失败: ${caseError.message}`)
           await db.from('missing_persons_cases').where('id', record.id).update({
-            image_webp_status: 2, // 2 表示处理失败
+            image_webp_status: 2, 
             image_count: 0
           })
         }
       }
 
-      this.logger.success(`✨ 本轮完成：${processedCasesCount} 个案件，${totalImagesProcessed} 张图片已上传到B2`)
+      /**
+       * 改进 3: HF 清尾逻辑
+       * 循环结束后，如果队列里还有图片（不满一个 batch），也要上传
+       */
+      if (hfBatchQueue.length > 0) {
+        this.logger.info(`🧹 正在处理剩余的 ${hfBatchQueue.length} 张图片备份...`)
+        await this.uploadToHf(hfBatchQueue)
+      }
+
+      this.logger.success(`✨ 本轮任务处理结束`)
 
     } catch (error) {
-      this.logger.error(`🚨 运行出错: ${error.message}`)
-      console.error(error.stack)
+      this.logger.error(`🚨 严重错误: ${error.message}`)
     }
   }
 
   /**
-   * 获取处理进度统计
+   * 封装 HF 上传重试逻辑
    */
+  private async uploadToHf(queue: HfFile[]) {
+    let success = false
+    let retry = 0
+    while (retry < 3 && !success) {
+      try {
+        await HfService.batchUpload(queue, `Batch upload: ${queue.length} images`)
+        success = true
+        this.logger.success(`✨ HF 备份成功 (${queue.length} 张)`)
+      } catch (err) {
+        retry++
+        this.logger.error(`❌ HF 上传失败，重试中 (${retry}/3)...`)
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    }
+  }
+
   async getStats() {
     const s = await db
       .from('missing_persons_cases')

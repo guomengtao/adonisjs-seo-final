@@ -27,7 +27,10 @@ jobs:
 
       - name: Run WebP Pipeline
         # 这里执行你发给我的 webp:run  node ace webp:run
-        run: node ace webp:run
+
+        run: |
+              node ace webp:run
+              curl -I https://huggingface.co/spaces/mengtaoguo/missing-persons-space
         env:
           NODE_ENV: production
           LOG_LEVEL: info
