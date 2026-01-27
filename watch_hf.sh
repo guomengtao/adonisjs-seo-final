@@ -7,7 +7,7 @@ run_summary() {
         # node ace ai:seo 
         node ace gemini:summary 
         echo "[SUM] --- 处理完成，休息 31 秒 ---"
-        sleep 31
+        sleep 3
     done
 }
 
@@ -29,7 +29,7 @@ run_tag() {
         node ace gemini:tags 
         node ace ai:to-zh
         echo "[TAG] --- 处理完成，休息 20 秒 ---"
-        sleep 20
+        sleep 3
     done
 }
 # 同时在后台启动两个任务
