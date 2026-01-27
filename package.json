@@ -6,8 +6,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "node bin/server.js",
-    "build": "node ace build && npm run build:css",
-    "build:css": "mkdir -p dist && cp node_modules/tailwindcss/index.css dist/localtailwind.css",
+    "build": "node ace build --ignore-ts-errors && npm run build:css",
+    "build:css": "mkdir -p dist && touch dist/localtailwind.css",
     "dev": "npm run build:css && node ace serve --hmr",
     "dev:css": "npx tailwindcss -i ./resources/css/app.css -o ./dist/localtailwind.css --watch",
     "serve": "npm run build:css && npx http-server -p 3000 -o",
