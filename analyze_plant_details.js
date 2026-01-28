@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // 加载环境变量
-config({ path: `${__dirname}/../.env` });
+config({ path: `${__dirname}/.env` });
 
 // 初始化PostgreSQL客户端
 function initPostgresClient() {
@@ -148,6 +148,32 @@ function safeExtractText($, selector) {
     }
 }
 
+function extractSectionContent($, sectionTitle) {
+    try {
+        // 查找包含sectionTitle的h2元素
+        const h2Element = $(`h2:contains("${sectionTitle}")`);
+        if (h2Element.length > 0) {
+            // 获取h2后面的所有同级元素，直到下一个h2
+            let content = '';
+            let nextElement = h2Element.next();
+            
+            while (nextElement.length > 0 && nextElement[0].tagName.toLowerCase() !== 'h2') {
+                const text = nextElement.text()?.trim();
+                if (text && text.length > 0) {
+                    content += text + ' ';
+                }
+                nextElement = nextElement.next();
+            }
+            
+            return content.trim() || null;
+        }
+        return null;
+    } catch (error) {
+        console.error(`提取章节内容错误 (${sectionTitle}):`, error.message);
+        return null;
+    }
+}
+
 // 针对PFAF网站的特殊提取函数
 function extractPFAFText($, label) {
     try {
@@ -230,30 +256,111 @@ function extractRelatedPlants($) {
     return relatedPlants;
 }
 
-// 提取图片信息
+// 提取图片信息并分类
 function extractImages($) {
-    const images = [];
+    const images = {
+        main: [],       // 主要植物图片（来自特定表格）
+        additional: []  // 其他相关图片
+    };
+    
+    // 定义常见图标和非植物图片的模式
+    const nonPlantImagePatterns = [
+        'icon', 'rating', 'spacer', 'placeholder', 'loading', 'searchV1b',
+        'advert', 'book', 'gif', 'water2.jpg', 'water3.jpg', 'sun.jpg'
+    ];
     
     try {
-        $('.plant-images img').each((index, element) => {
-            const image = {
-                url: $(element).attr('src')?.trim() || null,
-                alt: $(element).attr('alt')?.trim() || null,
-                title: $(element).attr('title')?.trim() || null,
-                caption: $(element).closest('.image-container').find('.caption').text()?.trim() || null
-            };
+        // 辅助函数：判断是否为非植物图片
+        function isNonPlantImage(src) {
+            if (!src) return true;
+            const lowerSrc = src.toLowerCase();
+            return nonPlantImagePatterns.some(pattern => lowerSrc.includes(pattern));
+        }
+        
+        // 辅助函数：标准化图片URL
+        function normalizeImageUrl(url, baseUrl) {
+            if (!url) return null;
             
-            // 过滤掉所有属性都为null的对象
-            const hasValidData = Object.values(image).some(value => value !== null);
-            if (hasValidData) {
-                images.push(image);
+            if (url.startsWith('http')) {
+                return url;
+            } else if (url.startsWith('../')) {
+                return baseUrl + url.substring(2);
+            } else if (url.startsWith('/')) {
+                return baseUrl + url;
+            } else {
+                return baseUrl + '/' + url;
+            }
+        }
+        
+        // 1. 优先提取主要植物图片（从特定表格中）
+        $('#ContentPlaceHolder1_tblPlantImges img').each((index, element) => {
+            const img = $(element);
+            const src = img.attr('src')?.trim();
+            
+            // 检查是否为有效图片
+            if (src && !isNonPlantImage(src)) {
+                const image = {
+                    url: src,
+                    alt: img.attr('alt')?.trim() || null,
+                    title: img.attr('title')?.trim() || null,
+                    width: img.attr('width')?.trim() || null,
+                    height: img.attr('height')?.trim() || null,
+                    source: 'main_table'  // 标记来源
+                };
+                
+                images.main.push(image);
             }
         });
+        
+        // 2. 提取其他表格中的植物图片
+        $('table td[valign="top"][align="center"] img').each((index, element) => {
+            const img = $(element);
+            const src = img.attr('src')?.trim();
+            
+            if (src && !isNonPlantImage(src)) {
+                const image = {
+                    url: src,
+                    alt: img.attr('alt')?.trim() || null,
+                    title: img.attr('title')?.trim() || null,
+                    width: img.attr('width')?.trim() || null,
+                    height: img.attr('height')?.trim() || null,
+                    source: 'other_table'
+                };
+                
+                // 确保不与主要图片重复
+                const isDuplicate = images.main.some(existing => existing.url === image.url);
+                if (!isDuplicate) {
+                    images.additional.push(image);
+                }
+            }
+        });
+        
+        // 3. 过滤和处理图片URL（标准化相对路径）
+        const baseUrl = 'https://pfaf.org';
+        
+        // 处理主要图片
+        images.main = images.main.map(image => ({
+            ...image,
+            url: normalizeImageUrl(image.url, baseUrl)
+        }));
+        
+        // 处理附加图片
+        images.additional = images.additional.map(image => ({
+            ...image,
+            url: normalizeImageUrl(image.url, baseUrl)
+        }));
+        
+        // 4. 合并所有图片，优先显示主要图片
+        const allImages = [...images.main, ...images.additional];
+        
+        console.log(`图片提取完成：${images.main.length}张主要植物图片，${images.additional.length}张附加图片`);
+        
+        return allImages;
+        
     } catch (error) {
         console.error('提取图片信息失败:', error);
+        return [];
     }
-    
-    return images;
 }
 
 // 提取护理图标信息
@@ -281,6 +388,55 @@ function extractCareIcons($) {
     return careIcons;
 }
 
+// 智能提取关键词
+function extractKeywords($, latinName) {
+    try {
+        const keywords = new Set();
+        
+        // 从页面标题中提取关键词
+        const title = safeExtractText($, 'title');
+        if (title) {
+            // 移除PFAF Plant Database等通用词
+            const cleanTitle = title.replace(/PFAF Plant Database/gi, '').trim();
+            // 按空格分割单词
+            const titleWords = cleanTitle.split(/\s+/).filter(word => 
+                word.length > 2 && !/^[0-9]+$/.test(word)
+            );
+            titleWords.forEach(word => keywords.add(word.toLowerCase()));
+        }
+        
+        // 从拉丁名中提取
+        if (latinName) {
+            keywords.add(latinName.toLowerCase());
+        }
+        
+        // 从常见植物属性字段中提取关键词
+        const plantFields = [
+            'Common Name', 'Family', 'USDA hardiness', 'Known Hazards', 
+            'Habitats', 'Range', 'Edibility Rating', 'Other Uses Rating',
+            'Weed Potential', 'Medicinal Rating'
+        ];
+        
+        for (const field of plantFields) {
+            const value = extractPFAFText($, field);
+            if (value) {
+                // 简单的关键词提取：按逗号、分号、空格分割
+                const words = value.split(/[,;\s]+/).filter(word => 
+                    word.length > 2 && !/^[0-9]+$/.test(word)
+                );
+                words.forEach(word => keywords.add(word.toLowerCase()));
+            }
+        }
+        
+        // 转换为数组并返回
+        return Array.from(keywords).join(', ');
+        
+    } catch (error) {
+        console.error('提取关键词失败:', error);
+        return null;
+    }
+}
+
 // 调试HTML结构
 function debugHtmlStructure(html, latinName) {
     const $ = cheerio.load(html);
@@ -288,6 +444,23 @@ function debugHtmlStructure(html, latinName) {
     console.log('=== HTML结构调试开始 ===');
     console.log('目标拉丁名:', latinName);
     console.log('HTML长度:', html.length);
+    
+    // 检查meta标签
+    console.log('\\n=== 检查meta标签 ===');
+    const metaTags = $('meta');
+    console.log(`找到 ${metaTags.length} 个meta标签:`);
+    
+    metaTags.each((index, element) => {
+        const name = $(element).attr('name');
+        const property = $(element).attr('property');
+
+
+        const content = $(element).attr('content');
+        
+        if (name || property) {
+            console.log(`  [${index}] name=\"${name}\" property=\"${property}\" content=\"${content?.substring(0, 100)}\"`);
+        }
+    });
     
     // 检查是否包含拉丁名
     const hasLatinName = html.includes(latinName);
@@ -299,7 +472,7 @@ function debugHtmlStructure(html, latinName) {
     for (const selector of selectors) {
         const elements = $(selector);
         if (elements.length > 0) {
-            console.log(`选择器 "${selector}" 找到 ${elements.length} 个元素:`);
+            console.log(`选择器 \"${selector}\" 找到 ${elements.length} 个元素:`);
             elements.each((index, element) => {
                 if (index < 3) { // 只显示前3个
                     const text = $(element).text()?.trim();
@@ -373,6 +546,48 @@ function debugHtmlStructure(html, latinName) {
         }
     }
     
+    // 检查实际的HTML结构 - 查看整个body内容的主要结构
+    console.log('\\n=== 检查主要HTML结构 ===');
+    
+    // 查找包含常见植物信息的关键词，并检查其具体位置
+    const keywords = ['Physical Characteristics', 'Edible Uses', 'Medicinal Uses', 'Other Uses', 'Cultivation details', 'Propagation'];
+    for (const keyword of keywords) {
+        console.log(`\\n=== 查找"${keyword}" ===`);
+        
+        // 查找包含关键词的b标签（PFAF使用b标签作为标题）
+        const bElements = $(`b:contains("${keyword}")`);
+        if (bElements.length > 0) {
+            console.log(`找到${bElements.length}个b标签包含"${keyword}"`);
+            bElements.each((index, element) => {
+                if (index < 2) { // 只显示前2个
+                    const html = $(element).html();
+                    const text = $(element).text()?.trim();
+                    const parentHtml = $(element).parent().html()?.substring(0, 300);
+                    const grandParentHtml = $(element).parent().parent().html()?.substring(0, 500);
+                    
+                    console.log(`  b元素HTML: ${html}`);
+                    console.log(`  b元素文本: ${text}`);
+                    console.log(`  父元素HTML: ${parentHtml}`);
+                    console.log(`  祖父元素HTML: ${grandParentHtml}`);
+                }
+            });
+        } else {
+            console.log(`未找到b标签包含"${keyword}"`);
+        }
+        
+        // 查找包含关键词的strong标签
+        const strongElements = $(`strong:contains("${keyword}")`);
+        if (strongElements.length > 0) {
+            console.log(`找到${strongElements.length}个strong标签包含"${keyword}"`);
+        }
+        
+        // 查找包含关键词的h2标签
+        const h2Elements = $(`h2:contains("${keyword}")`);
+        if (h2Elements.length > 0) {
+            console.log(`找到${h2Elements.length}个h2标签包含"${keyword}"`);
+        }
+    }
+    
     // 查找包含拉丁名的元素
     const latinElements = $('*:contains("' + latinName + '")');
     console.log(`\\n包含拉丁名 "${latinName}" 的元素数量:`, latinElements.length);
@@ -430,12 +645,12 @@ function extractPlantDetails(html, latinName) {
         plant_habitats: extractPFAFText($, 'Plant Habitats'),
         
         // 详细描述 - 从对应的h2标题后提取
-        edible_uses: safeExtractText($, '#edible_uses p'),
-        medicinal_uses: safeExtractText($, '#medicinal_uses p'),
-        other_uses: safeExtractText($, '#other_uses p'),
-        special_uses: safeExtractText($, '#special_uses p'),
-        cultivation_details: safeExtractText($, '#cultivation_details p'),
-        propagation: safeExtractText($, '#propagation p'),
+        edible_uses: extractSectionContent($, 'Edible Uses'),
+        medicinal_uses: extractSectionContent($, 'Medicinal Uses'),
+        other_uses: extractSectionContent($, 'Other Uses'),
+        special_uses: extractSectionContent($, 'Special Uses'),
+        cultivation_details: extractSectionContent($, 'Cultivation details'),
+        propagation: extractSectionContent($, 'Propagation'),
         
         // 其他信息
         other_names: extractPFAFText($, 'Other Names'),
@@ -447,7 +662,11 @@ function extractPlantDetails(html, latinName) {
         // 元数据
         meta_description: safeExtractText($, 'meta[name="description"]'),
         page_title: safeExtractText($, 'title'),
+        meta_keywords: safeExtractText($, 'meta[name="keywords"]'),
         description: safeExtractText($, '#description'),
+        
+        // 智能提取关键词（从标题和内容中提取）
+        extracted_keywords: extractKeywords($, latinName),
         soil_preferences: extractPFAFText($, 'Soil'),
         light_preferences: extractPFAFText($, 'Light'),
         moisture_preferences: extractPFAFText($, 'Moisture'),
@@ -477,10 +696,10 @@ async function savePlantDetailsToDB(client, plantDetails) {
                 medicinal_rating, physical_characteristics, synonyms, plant_habitats,
                 edible_uses, medicinal_uses, other_uses, special_uses, cultivation_details, propagation,
                 other_names, native_range, weed_potential_text, conservation_status,
-                meta_description, page_title, related_plants, images, care_icons
+                meta_description, page_title, meta_keywords, extracted_keywords, related_plants, images, care_icons
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+                $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
             )
             ON CONFLICT (latin_name) DO UPDATE SET
                 common_name = EXCLUDED.common_name,
@@ -508,6 +727,8 @@ async function savePlantDetailsToDB(client, plantDetails) {
                 conservation_status = EXCLUDED.conservation_status,
                 meta_description = EXCLUDED.meta_description,
                 page_title = EXCLUDED.page_title,
+                meta_keywords = EXCLUDED.meta_keywords,
+                extracted_keywords = EXCLUDED.extracted_keywords,
                 related_plants = EXCLUDED.related_plants,
                 images = EXCLUDED.images,
                 care_icons = EXCLUDED.care_icons,
@@ -523,7 +744,7 @@ async function savePlantDetailsToDB(client, plantDetails) {
             plantDetails.medicinal_uses, plantDetails.other_uses, plantDetails.special_uses,
             plantDetails.cultivation_details, plantDetails.propagation, plantDetails.other_names,
             plantDetails.native_range, plantDetails.weed_potential_text, plantDetails.conservation_status,
-            plantDetails.meta_description, plantDetails.page_title, 
+            plantDetails.meta_description, plantDetails.page_title, plantDetails.meta_keywords, plantDetails.extracted_keywords,
             plantDetails.related_plants.length > 0 ? JSON.stringify(plantDetails.related_plants) : null,
             plantDetails.images.length > 0 ? JSON.stringify(plantDetails.images) : null,
             plantDetails.care_icons.length > 0 ? JSON.stringify(plantDetails.care_icons) : null
@@ -540,13 +761,13 @@ async function savePlantDetailsToDB(client, plantDetails) {
 
 // 计算分析结果统计
 function calculateAnalysisResult(plantDetails) {
-    const result = {
-        total_fields: 29, // 总字段数
-        extracted_fields: 0,
-        related_plants_count: plantDetails.related_plants.length,
-        images_count: plantDetails.images.length,
-        care_icons_count: plantDetails.care_icons.length
-    };
+        const result = {
+            total_fields: 31, // 总字段数（增加了meta_keywords和extracted_keywords）
+            extracted_fields: 0,
+            related_plants_count: plantDetails.related_plants.length,
+            images_count: plantDetails.images.length,
+            care_icons_count: plantDetails.care_icons.length
+        };
     
     // 计算已提取的字段数
     const fields = Object.keys(plantDetails);

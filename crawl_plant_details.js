@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // 加载环境变量
-config({ path: `${__dirname}/../.env` });
+config({ path: `${__dirname}/.env` });
 
 // 初始化PostgreSQL客户端
 function initPostgresClient() {
