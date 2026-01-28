@@ -42,48 +42,21 @@ async function testDatabaseConnection(client) {
 // 获取一条待分析的记录（已抓取HTML但未分析）
 async function getPendingAnalysisRecord(client) {
     try {
-        // 先检查表是否有analysis_status字段
-        const checkQuery = `
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'raw_plants' 
-            AND column_name = 'analysis_status'
+        // 使用新版查询（有analysis_status字段）
+        const newQuery = `
+            SELECT id, latin_name, raw_html, common_name
+            FROM raw_plants 
+            WHERE status = 'completed' 
+            AND analysis_status = 'pending'
+            AND raw_html IS NOT NULL
+            AND raw_html != ''
+            ORDER BY id ASC 
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
         `;
         
-        const checkResult = await client.query(checkQuery);
-        
-        if (checkResult.rows.length === 0) {
-            // 使用旧版查询（没有analysis_status字段）
-            const oldQuery = `
-                SELECT id, latin_name, raw_html, common_name
-                FROM raw_plants 
-                WHERE status = 'completed' 
-                AND raw_html IS NOT NULL
-                AND raw_html != ''
-                ORDER BY id ASC 
-                LIMIT 1
-                FOR UPDATE SKIP LOCKED
-            `;
-            
-            const result = await client.query(oldQuery);
-            return result.rows[0] || null;
-        } else {
-            // 使用新版查询（有analysis_status字段）
-            const newQuery = `
-                SELECT id, latin_name, raw_html, common_name
-                FROM raw_plants 
-                WHERE status = 'completed' 
-                AND analysis_status IS NULL
-                AND raw_html IS NOT NULL
-                AND raw_html != ''
-                ORDER BY id ASC 
-                LIMIT 1
-                FOR UPDATE SKIP LOCKED
-            `;
-            
-            const result = await client.query(newQuery);
-            return result.rows[0] || null;
-        }
+        const result = await client.query(newQuery);
+        return result.rows[0] || null;
     } catch (error) {
         console.error('获取待分析记录失败:', error);
         return null;
@@ -93,32 +66,17 @@ async function getPendingAnalysisRecord(client) {
 // 更新记录状态为分析中
 async function updateStatusToAnalyzing(client, recordId) {
     try {
-        // 先检查表是否有analysis_status字段
-        const checkQuery = `
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'raw_plants' 
-            AND column_name = 'analysis_status'
+        // 更新分析状态为analyzing
+        const updateQuery = `
+            UPDATE raw_plants 
+            SET analysis_status = 'analyzing', analysis_started_at = NOW() 
+            WHERE id = $1
         `;
         
-        const checkResult = await client.query(checkQuery);
-        
-        if (checkResult.rows.length === 0) {
-            // 如果没有analysis_status字段，返回true表示跳过更新
-            return true;
-        } else {
-            // 更新分析状态为analyzing
-            const updateQuery = `
-                UPDATE raw_plants 
-                SET analysis_status = 'analyzing', analysis_started_at = NOW() 
-                WHERE id = $1
-            `;
-            
-            await client.query(updateQuery, [recordId]);
-            return true;
-        }
+        await client.query(updateQuery, [recordId]);
+        return true;
     } catch (error) {
-        console.error('更新分析状态失败:', error);
+        console.error(`更新记录 ${recordId} 分析状态失败:`, error);
         return false;
     }
 }
@@ -609,33 +567,18 @@ function calculateAnalysisResult(plantDetails) {
 // 更新记录分析状态为完成
 async function updateAnalysisStatusToCompleted(client, recordId, analysisResult) {
     try {
-        // 先检查表是否有analysis_status字段
-        const checkQuery = `
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'raw_plants' 
-            AND column_name = 'analysis_status'
+        const query = `
+            UPDATE raw_plants 
+            SET analysis_status = 'completed', 
+                analysis_completed_at = NOW(),
+                analysis_result = $1,
+                updated_at = NOW() 
+            WHERE id = $2
         `;
         
-        const checkResult = await client.query(checkQuery);
-        
-        if (checkResult.rows.length === 0) {
-            console.log('analysis_status字段不存在，跳过状态更新');
-            return true;
-        } else {
-            const query = `
-                UPDATE raw_plants 
-                SET analysis_status = 'completed', 
-                    analysis_completed_at = NOW(),
-                    analysis_result = $1,
-                    updated_at = NOW() 
-                WHERE id = $2
-            `;
-            
-            await client.query(query, [JSON.stringify(analysisResult), recordId]);
-            console.log(`记录 ${recordId} 分析状态已更新为 completed`);
-            return true;
-        }
+        await client.query(query, [JSON.stringify(analysisResult), recordId]);
+        console.log(`记录 ${recordId} 分析状态已更新为 completed`);
+        return true;
     } catch (error) {
         console.error(`更新记录 ${recordId} 分析状态失败:`, error);
         return false;
@@ -645,32 +588,17 @@ async function updateAnalysisStatusToCompleted(client, recordId, analysisResult)
 // 更新记录分析状态为失败
 async function updateAnalysisStatusToFailed(client, recordId, errorMessage) {
     try {
-        // 先检查表是否有analysis_status字段
-        const checkQuery = `
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'raw_plants' 
-            AND column_name = 'analysis_status'
+        const query = `
+            UPDATE raw_plants 
+            SET analysis_status = 'failed', 
+                analysis_error_log = $1,
+                updated_at = NOW() 
+            WHERE id = $2
         `;
         
-        const checkResult = await client.query(checkQuery);
-        
-        if (checkResult.rows.length === 0) {
-            console.log('analysis_status字段不存在，跳过状态更新');
-            return true;
-        } else {
-            const query = `
-                UPDATE raw_plants 
-                SET analysis_status = 'failed', 
-                    analysis_error_log = $1,
-                    updated_at = NOW() 
-                WHERE id = $2
-            `;
-            
-            await client.query(query, [errorMessage, recordId]);
-            console.log(`记录 ${recordId} 分析状态已更新为 failed`);
-            return true;
-        }
+        await client.query(query, [errorMessage, recordId]);
+        console.log(`记录 ${recordId} 分析状态已更新为 failed`);
+        return true;
     } catch (error) {
         console.error(`更新记录 ${recordId} 分析状态失败:`, error);
         return false;
